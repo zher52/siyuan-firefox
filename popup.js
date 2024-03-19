@@ -4,32 +4,32 @@ document.addEventListener('DOMContentLoaded', () => {
   const showTipElement = document.getElementById('showTip')
   const notebooksElement = document.getElementById('notebooks')
   ipElement.addEventListener('change', () => {
-    chrome.storage.sync.set({
+    browser.storage.sync.set({
       ip: ipElement.value,
     })
   })
   tokenElement.addEventListener('change', () => {
-    chrome.storage.sync.set({
+    browser.storage.sync.set({
       token: tokenElement.value,
     })
     getNotebooks(ipElement, tokenElement, notebooksElement)
   })
   showTipElement.addEventListener('change', () => {
-    chrome.storage.sync.set({
+    browser.storage.sync.set({
       showTip: showTipElement.checked,
     })
   })
   notebooksElement.addEventListener('change', () => {
     notebooksElement.setAttribute("data-id", notebooksElement.value)
-    chrome.storage.sync.set({
+    browser.storage.sync.set({
       notebook: notebooksElement.value,
     })
   })
 
   const sendElement = document.getElementById('send')
   sendElement.addEventListener('click', () => {
-    chrome.tabs.query({currentWindow: true, active: true}, function (tabs) {
-      chrome.scripting.executeScript({
+    browser.tabs.query({currentWindow: true, active: true}, function (tabs) {
+      browser.scripting.executeScript({
         target: {tabId: tabs[0].id},
         func: siyuanGetReadability,
         args: [tabs[0].id],
@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   })
 
-  chrome.storage.sync.get({
+  browser.storage.sync.get({
     ip: 'http://127.0.0.1:6806',
     showTip: true,
     token: '',
@@ -87,7 +87,7 @@ const getNotebooks = (ipElement, tokenElement, notebooksElement) => {
         notebooksElement.innerHTML = optionsHTML
         notebooksElement.value = notebooksElement.getAttribute("data-id")
 
-        chrome.storage.sync.set({
+        browser.storage.sync.set({
           notebook: notebooksElement.value,
         })
       } else {

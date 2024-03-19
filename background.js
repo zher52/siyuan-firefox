@@ -1,13 +1,13 @@
-chrome.contextMenus.removeAll(function () {
-  chrome.contextMenus.create({
+browser.contextMenus.removeAll(function () {
+  browser.contextMenus.create({
     id: 'copy-to-siyuan',
     title: 'Copy to SiYuan',
     contexts: ['selection', 'image'],
   })
 
-  chrome.contextMenus.onClicked.addListener(function (info, tab) {
+  browser.contextMenus.onClicked.addListener(function (info, tab) {
     if (info.menuItemId === 'copy-to-siyuan') {
-      chrome.tabs.sendMessage(tab.id, {
+      browser.tabs.sendMessage(tab.id, {
         'func': 'copy',
         'tabId': tab.id,
         'srcUrl': info.srcUrl,
@@ -16,7 +16,7 @@ chrome.contextMenus.removeAll(function () {
   })
 })
 
-chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
+browser.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
   if (request.func !== 'upload-copy') {
     return
   }
@@ -44,7 +44,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
     body: formData,
   }).then((response) => {
     if (response.redirected) {
-      chrome.tabs.sendMessage(requestData.tabId, {
+      browser.tabs.sendMessage(requestData.tabId, {
         'func': 'tip',
         'msg': 'Invalid API token',
         'tip': 'tip',
@@ -53,7 +53,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
     return response.json()
   }).then((response) => {
     if (response.code < 0) {
-      chrome.tabs.sendMessage(requestData.tabId, {
+      browser.tabs.sendMessage(requestData.tabId, {
         'func': 'tip',
         'msg': response.msg,
         'tip': requestData.tip,
@@ -61,13 +61,13 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
       return
     }
 
-    chrome.tabs.sendMessage(requestData.tabId, {
+    browser.tabs.sendMessage(requestData.tabId, {
       'func': 'copy2Clipboard',
       'data': response.data.md,
     })
 
     if ('' !== response.msg && requestData.type !== 'article') {
-      chrome.tabs.sendMessage(requestData.tabId, {
+      browser.tabs.sendMessage(requestData.tabId, {
         'func': 'tip',
         'msg': response.msg,
         'tip': requestData.tip,
@@ -106,7 +106,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
         return response.json()
       }).then((response) => {
         if (0 === response.code) {
-          chrome.tabs.sendMessage(requestData.tabId, {
+          browser.tabs.sendMessage(requestData.tabId, {
             'func': 'tip',
             'msg': "Create article successfully",
             'tip': requestData.tip,
@@ -126,7 +126,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
             })
           }
         } else {
-          chrome.tabs.sendMessage(requestData.tabId, {
+          browser.tabs.sendMessage(requestData.tabId, {
             'func': 'tip',
             'msg': response.msg,
             'tip': requestData.tip,

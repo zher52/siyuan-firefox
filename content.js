@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function () {
-  chrome.runtime.onMessage.addListener(
+  browser.runtime.onMessage.addListener(
     async (request, sender, sendResponse) => {
       if ('tip' === request.func && request.tip) {
         siyuanShowTip(request.msg)
@@ -121,7 +121,7 @@ const siyuanSendUpload = async (tempElement, tabId, srcUrl, type, article, href)
     }
   }
 
-  chrome.storage.sync.get({
+  browser.storage.sync.get({
     ip: 'http://127.0.0.1:6806',
     showTip: true,
     token: '',
@@ -153,7 +153,7 @@ const siyuanSendUpload = async (tempElement, tabId, srcUrl, type, article, href)
     const jsonStr = JSON.stringify(msgJSON);
     const jsonBlob = new Blob([jsonStr], {type: "application/json"});
     const dataURL = URL.createObjectURL(jsonBlob);
-    chrome.runtime.sendMessage({func: 'upload-copy', dataURL: dataURL})
+    browser.runtime.sendMessage({func: 'upload-copy', dataURL: dataURL})
   })
 }
 
