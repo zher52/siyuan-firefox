@@ -151,8 +151,9 @@ const siyuanSendUpload = async (tempElement, tabId, srcUrl, type, article, href)
       tabId,
     };
     const jsonStr = JSON.stringify(msgJSON);
-    const jsonBlob = new Blob([jsonStr], {type: "application/json"});
-    const dataURL = URL.createObjectURL(jsonBlob);
+    const base64Data = btoa(unescape(encodeURIComponent(jsonStr)));
+    const dataURL =`data:application/json;base64,${base64Data}`;
+    console.log(dataURL);
     browser.runtime.sendMessage({func: 'upload-copy', dataURL: dataURL})
   })
 }

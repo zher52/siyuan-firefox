@@ -1,5 +1,5 @@
 {
-  "manifest_version": 1,
+  "manifest_version": 3,
   "minimum_chrome_version": "91",
   "homepage_url": "https://github.com/siyuan-note/siyuan-chrome",
   "action": {
@@ -22,7 +22,7 @@
     }
   ],
   "background": {
-    "service_worker": "background.js"
+    "scripts": ["background.js"]
   },
   "permissions": [
     "activeTab",
@@ -35,7 +35,18 @@
     "*://*/*"
   ],
   "name": "SiYuan",
-  "options_page": "options.html",
+  "options_ui":{
+    "page": "options.html",
+    "open_in_tab": true
+  },
   "description": "Web clipping for SiYuan. 思源笔记网页剪藏。",
-  "version": "1.1.14"
+  "version": "1.1.14",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "siyuan-extension@zher52.cn"
+    }
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' blob:; object-src 'self' blob:;"
+  }
 }

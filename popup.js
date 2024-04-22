@@ -45,6 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
     token: '',
     notebook: '',
   }, function (items) {
+    items = items ? items: {};
     ipElement.value = items.ip || 'http://127.0.0.1:6806'
     tokenElement.value = items.token || ''
     showTipElement.checked = items.showTip
