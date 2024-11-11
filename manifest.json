@@ -40,7 +40,6 @@
     "open_in_tab": true
   },
   "description": "Web clipping for SiYuan. 思源笔记网页剪藏。",
-  "version": "1.1.14",
   "browser_specific_settings": {
     "gecko": {
       "id": "siyuan-extension@zher52.cn"
@@ -48,5 +47,6 @@
   },
   "content_security_policy": {
     "extension_pages": "script-src 'self' blob:; object-src 'self' blob:;"
-  }
+  },
+  "version": "1.5.8"
 }
