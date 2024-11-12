@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "minimum_chrome_version": "91",
-  "homepage_url": "https://github.com/siyuan-note/siyuan-chrome",
+  "homepage_url": "https://github.com/zher52/siyuan-firefox.git",
   "action": {
     "default_title": "SiYuan",
     "default_popup": "options.html"
