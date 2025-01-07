@@ -8,7 +8,7 @@
 
 ### 🛠️ 安装
 
-* Chrome：[SiYuan - Chrome Web Store](https://chrome.google.com/webstore/detail/siyuan/hkcgjbeblifaincobbcfiffbpgoafepk)
+* Chrome：[SiYuan - Chrome Web Store](https://browser.google.com/webstore/detail/siyuan/hkcgjbeblifaincobbcfiffbpgoafepk)
 * Edge：[SiYuan - Microsoft Edge Addons](https://microsoftedge.microsoft.com/addons/detail/siyuan/lclhdlhleinlppggbbgimbekofanbkcf)
 * GitHub：[siyuan-note/siyuan-chrome](https://github.com/siyuan-note/siyuan-chrome)
 

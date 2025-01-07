@@ -2,6 +2,7 @@
   "manifest_version": 3,
   "minimum_chrome_version": "91",
   "homepage_url": "https://github.com/zher52/siyuan-firefox.git",
+  "default_locale": "en",
   "action": {
     "default_title": "SiYuan",
     "default_popup": "options.html"
@@ -34,12 +35,12 @@
   "host_permissions": [
     "*://*/*"
   ],
-  "name": "SiYuan",
+  "name": "__MSG_extension_name__",
   "options_ui":{
     "page": "options.html",
     "open_in_tab": true
   },
-  "description": "Web clipping for SiYuan. 思源笔记网页剪藏。",
+  "description": "__MSG_extension_description__",
   "browser_specific_settings": {
     "gecko": {
       "id": "siyuan-extension@zher52.cn"
@@ -48,5 +49,5 @@
   "content_security_policy": {
     "extension_pages": "script-src 'self' blob:; object-src 'self' blob:;"
   },
-  "version": "1.7.1"
+  "version": "1.8.4"
 }
