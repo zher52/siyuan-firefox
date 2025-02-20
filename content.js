@@ -104,7 +104,7 @@ const siyuanConvertBlobToBase64 = (blob) => new Promise((resolve, reject) => {
     reader.readAsDataURL(blob)
 })
 
-// 网页换行用span样式word-break的特殊处理 https://github.com/siyuan-note/siyuan/issues/13195
+// 网页换行用 span 样式 word-break 的特殊处理 https://github.com/siyuan-note/siyuan/issues/13195
 // 递归查找父元素直到找到 pre、code、span、math 或 math相关标签
 function isIgnoredElement(element) {
     // 递归查找父元素直到找到 pre、code、span、math 或 math相关标签
@@ -135,7 +135,7 @@ function isIgnoredElement(element) {
     return false; // 没找到时返回 false
 }
 
-// 处理会换行的span后添加 <br>，让kernel能识别到换行
+// 处理会换行的 span 后添加 <br>，让内核能识别到换行
 function siyuanSpansAddBr(tempElement) {
     const spans = tempElement.querySelectorAll('span');
     if (!spans || spans.length === 0) {
@@ -177,7 +177,7 @@ function siyuanSpansAddBr(tempElement) {
     }
 };
 
-// 网页换行用span样式word-break的特殊处理 https://github.com/siyuan-note/siyuan/issues/13195
+// 网页换行用 span 样式 word-break 的特殊处理 https://github.com/siyuan-note/siyuan/issues/13195
 // 移除由 span_add_br 添加的 <br>，还原原有样式
 function siyuanSpansDelBr(tempElement) {
     const brs = tempElement.querySelectorAll('br[data-added-by-siyuan="true"]');
@@ -195,49 +195,110 @@ function siyuanProcessBoldStyle(tempElement) {
 
     boldElements.forEach(element => {
         const style = window.getComputedStyle(element);
+        if (element.tagName === 'B' || element.tagName === 'STRONG') {
+            return; // 如果元素本身是 <b> 或 <strong> 标签，跳过
+        }
+
+        if (parentContainsBold(element)) {
+            return;  // 如果元素的父元素是 B 或 STRONG 标签，跳过
+        }
 
         // 判断是否具有 font-weight: bold
         if (style.fontWeight === 'bold' || style.fontWeight === '700') { // '700' 是 bold 的常见数值
-            // 获取当前元素的文本内容
-            const innerHTML = element.innerHTML;
-
-            // 将文本内容包裹在 <b> 标签中
-            element.innerHTML = `<b b-added-by-siyuan="true">${innerHTML}</b>`;
+            // 将 element 中的各个元素使用 <b> 标签包裹
+            const children = element.childNodes;
+            for (let i = 0; i < children.length; i++) {
+                const child = children[i];
+                if (child.nodeType === Node.TEXT_NODE) {
+                    // 如果是文本节点，直接包裹在 <b> 标签中
+                    const text = child.nodeValue;
+                    const textElement = document.createElement('b');
+                    textElement.setAttribute('b-added-by-siyuan', 'true');
+                    textElement.textContent = text;
+                    element.replaceChild(textElement, child);
+                } else if (child.nodeType === Node.ELEMENT_NODE) {
+                    // 如果是元素节点，递归处理
+                    const childElement = child;
+                    const childTagName = childElement.tagName.toLowerCase();
+                    if (childTagName === 'b' || childTagName === 'strong') {
+                        continue; // 如果是 <b> 或 <strong> 标签，跳过
+                    }
+                    if (parentContainsBold(childElement)) {
+                        continue;  // 如果元素的父元素是 B 或 STRONG 标签，跳过
+                    }
+                    // 递归处理
+                    siyuanProcessBoldStyle(childElement);
+                }
+            }
         }
     });
+}
+
+function parentContainsBold(element) {
+    let parent = element.parentElement;
+    while (parent) {
+        if (parent.tagName === 'B' || parent.tagName === 'STRONG') {
+            return true;
+        }
+        parent = parent.parentElement;
+    }
+    return false;
 }
 
 function revertBoldStyles(tempElement) {
     // 获取所有带有 b-added-by-siyuan="true" 的 <b> 标签
     const elements = tempElement.querySelectorAll('b[b-added-by-siyuan="true"]');
-
     elements.forEach(element => {
-        // 获取元素的原始文本内容
-        const innerHTML = element.innerHTML;
-
-        // 将 <b> 标签移除，恢复原本的文本
+        // 将包裹的 <b> 标签移除，恢复原本的元素
         const parent = element.parentNode;
-        parent.innerHTML = parent.innerHTML.replace(element.outerHTML, innerHTML);
+        parent.replaceChild(document.createTextNode(element.textContent), element);
     });
 
     console.log(`revertBoldStyles reverted ${elements.length} <br> elements.`);
 }
 
-// 替换斜体样式为内核可识别<i>标签 https://github.com/siyuan-note/siyuan/issues/13306
+// 替换斜体样式为内核可识别 <i> 标签 https://github.com/siyuan-note/siyuan/issues/13306
 function siyuanProcessItalicStyle(tempElement) {
     // 获取所有元素
     const allElements = tempElement.querySelectorAll('*');
 
     allElements.forEach(element => {
         const style = window.getComputedStyle(element);
+        if (element.tagName === 'I' || element.tagName === 'EM') {
+            return; // 如果元素本身是 <i> 或 <em> 标签，跳过
+        }
+
+        if (parentContainsItalic(element)) {
+            return;  // 如果元素的父元素是 I 或 EM 标签，跳过
+        }
 
         // 判断是否具有 font-style: italic
         if (style.fontStyle === 'italic') {
-            // 获取当前元素的文本内容
-            const innerHTML = element.innerHTML;
-
-            // 将文本内容包裹在 <i> 标签中
-            element.innerHTML = `<i i-added-by-siyuan="true">${innerHTML}</i>`;
+            // 将 element 中的各个元素使用 <i> 标签包裹
+            const children = element.childNodes;
+            for (let i = 0; i < children.length; i++) {
+                const child = children[i];
+                if (child.nodeType === Node.TEXT_NODE) {
+                    // 如果是文本节点，直接包裹在 <i> 标签中
+                    const text = child.nodeValue;
+                    const textElement = document.createElement('i');
+                    textElement.setAttribute('i-added-by-siyuan', 'true');
+                    textElement.textContent = text;
+                    element.replaceChild(textElement, child);
+                } else if (child.nodeType === Node.ELEMENT_NODE) {
+                    // 如果是元素节点，递归处理
+                    const childElement = child;
+                    const childTagName = childElement.tagName.toLowerCase();
+                    if (childTagName === 'i' || childTagName === 'em') {
+                        continue; // 如果是 <i> 或 <em> 标签，跳过
+                    }
+                    if (parentContainsItalic(childElement)) {
+                        continue;  // 如果元素的父元素是 I 或 EM 标签，跳过
+                    }
+                    // 递归处理
+                    siyuanProcessItalicStyle(childElement);
+                }
+            }
         }
     });
 }
@@ -245,21 +306,83 @@ function siyuanProcessItalicStyle(tempElement) {
 function revertItalicStyles(tempElement) {
     // 获取所有带有 b-added-by-siyuan="true" 的 <b> 标签
     const elements = tempElement.querySelectorAll('i[i-added-by-siyuan="true"]');
-
     elements.forEach(element => {
-        // 获取元素的原始文本内容
-        const innerHTML = element.innerHTML;
-
-        // 将 <b> 标签移除，恢复原本的文本
+        // 将包裹的 <i> 标签移除，恢复原本的元素
         const parent = element.parentNode;
-        parent.innerHTML = parent.innerHTML.replace(element.outerHTML, innerHTML);
+        parent.replaceChild(document.createTextNode(element.textContent), element);
     });
 
     console.log(`revertItalicStyles reverted ${elements.length} <br> elements.`);
 }
 
-// 重构并合并Readability前处理 https://github.com/siyuan-note/siyuan/issues/13306
-async function siyuanGetCloneNode(tempElement) {
+function parentContainsItalic(element) {
+    let parent = element.parentElement;
+    while (parent) {
+        if (parent.tagName === 'I' || parent.tagName === 'EM') {
+            return true;
+        }
+        parent = parent.parentElement;
+    }
+    return false;
+}
+
+function simplifyNestedTags(root, tagName) {
+    let elements = root.querySelectorAll(tagName);
+    let hasNested = true;
+
+    while (hasNested) {
+        hasNested = false;
+        elements.forEach(element => {
+            if (simplifyElement(element, tagName)) {
+                hasNested = true;
+            }
+        });
+        elements = root.querySelectorAll(tagName);
+    }
+
+    function simplifyElement(element, tagName) {
+        let nestedFound = false;
+        if (element.hasChildNodes()) {
+            element.childNodes.forEach(child => {
+                if (child.nodeType === Node.ELEMENT_NODE) {
+                    if (child.tagName === tagName) {
+                        nestedFound = true;
+                        while (child.firstChild) {
+                            element.insertBefore(child.firstChild, child);
+                        }
+                        child.remove();
+                    } else {
+                        nestedFound = nestedFound || simplifyElement(child, tagName);
+                    }
+                }
+            });
+        }
+        return nestedFound;
+    }
+}
+
+// 移除图片链接 https://github.com/siyuan-note/siyuan/issues/13941
+function siyuanRemoveImgLink(tempElement) {
+    const images = tempElement.querySelectorAll('img');
+    images.forEach(image => {
+        const parent = image.parentElement;
+        if (!parent) {
+            return;
+        }
+
+        if (parent.tagName === 'A') {
+            const grandParent = parent.parentElement;
+            if (!grandParent) {
+                return;
+            }
+            grandParent.insertBefore(image, parent);
+            parent.remove();
+        }
+    });
+}
+
+// 重构并合并 Readability 前处理 https://github.com/siyuan-note/siyuan/issues/13306
+async function siyuanGetCloneNode(tempDoc) {
     let items;
     try {
         items = await new Promise((resolve, reject) => {
@@ -267,6 +390,7 @@ async function siyuanGetCloneNode(tempElement) {
                 expSpan: true,
                 expBold: false,
                 expItalic: false,
+                expRemoveImgLink: false,
             }, (result) => {
                 if (browser.runtime.lastError) {
                     reject(browser.runtime.lastError);
@@ -281,43 +405,77 @@ async function siyuanGetCloneNode(tempElement) {
             expSpan: true,
             expBold: false,
             expItalic: false,
+            expRemoveImgLink: false,
         };
     }
 
-    //前处理，增加可识别样式
+    // 前处理，增加可识别样式
     if (items.expBold) {
-        // 替换粗体样式为内核可识别<b>标签 https://github.com/siyuan-note/siyuan/issues/13306
-        siyuanProcessBoldStyle(tempElement);
+        // 替换粗体样式为内核可识别 <b> 标签 https://github.com/siyuan-note/siyuan/issues/13306
+        siyuanProcessBoldStyle(tempDoc);
     }
 
     if (items.expItalic) {
-        // 替换斜体样式为内核可识别<i>标签 https://github.com/siyuan-note/siyuan/issues/13306
-        siyuanProcessItalicStyle(tempElement);
+        // 替换斜体样式为内核可识别 <i> 标签 https://github.com/siyuan-note/siyuan/issues/13306
+        siyuanProcessItalicStyle(tempDoc);
+    }
+
+    if (items.expRemoveImgLink) {
+        // 移除图片链接 https://github.com/siyuan-note/siyuan/issues/13941
+        siyuanRemoveImgLink(tempDoc);
     }
 
     if (items.expSpan) {
-        // 网页换行用span样式word-break的特殊处理 https://github.com/siyuan-note/siyuan/issues/13195
-        // 处理会换行的span后添加 <br>，让kernel能识别到换行
-        siyuanSpansAddBr(tempElement);
+        // 网页换行用 span 样式 word-break 的特殊处理 https://github.com/siyuan-note/siyuan/issues/13195
+        // 处理会换行的 span 后添加 <br>，让内核能识别到换行
+        siyuanSpansAddBr(tempDoc);
     }
+
+    // 合并嵌套的 strong 标签
+    simplifyNestedTags(tempDoc, 'STRONG');
+    simplifyNestedTags(tempDoc, 'B');
+    simplifyNestedTags(tempDoc, 'I');
+    simplifyNestedTags(tempDoc, 'EM');
+
+    // 如果行级标签包含了块级标签，则将该行级标签改为 div
+    const inlineTags = ['span', 'strong', 'b', 'i', 'em'];
+    const blockTags = ['div', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'table', 'tr', 'td', 'th', 'blockquote', 'pre', 'code', 'section'];
+    inlineTags.forEach(inlineTag => {
+        const elements = document.querySelectorAll(inlineTag);
+        elements.forEach(element => {
+            let containsBlock = false;
+            blockTags.forEach(blockTag => {
+                if (element.querySelector(blockTag)) {
+                    containsBlock = true;
+                }
+            });
+            if (containsBlock) {
+                const div = document.createElement('div');
+                while (element.firstChild) {
+                    div.appendChild(element.firstChild);
+                }
+                element.parentNode.replaceChild(div, element);
+            }
+        });
+    });
 
     const clonedDoc = document.cloneNode(true);
 
-    //后处理，还原样式
+    // 后处理，还原样式
     if (items.expBold) {
         // 还原粗体样式
-        revertBoldStyles(tempElement);
+        revertBoldStyles(tempDoc);
     }
 
     if (items.expItalic) {
         // 还原斜体样式
-        revertItalicStyles(tempElement);
+        revertItalicStyles(tempDoc);
     }
 
     if (items.expSpan) {
-        // 网页换行用span样式word-break的特殊处理 https://github.com/siyuan-note/siyuan/issues/13195
-        // 处理会换行的span后添加 <br>，让kernel能识别到换行
-        siyuanSpansDelBr(tempElement);
+        // 网页换行用 span 样式 word-break 的特殊处理 https://github.com/siyuan-note/siyuan/issues/13195
+        // 处理会换行的 span 后添加 <br>，让内核能识别到换行
+        siyuanSpansDelBr(tempDoc);
     }
 
     return clonedDoc;
@@ -336,6 +494,7 @@ const siyuanSendUpload = async (tempElement, tabId, srcUrl, type, article, href)
         expSpan: true,
         expBold: false,
         expItalic: false,
+        expRemoveImgLink: false,
     }, async function (items) {
         if (!items.token) {
             siyuanShowTipByKey("tip_token_miss")

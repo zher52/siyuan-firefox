@@ -49,5 +49,5 @@
   "content_security_policy": {
     "extension_pages": "script-src 'self' blob:; object-src 'self' blob:;"
   },
-  "version": "1.8.4"
+  "version": "1.9.3"
 }
