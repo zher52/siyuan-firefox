@@ -146,6 +146,10 @@ browser.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
                             }),
                         })
                     }
+
+                    browser.tabs.sendMessage(requestData.tabId, {
+                        'func': 'reload',
+                    })
                 } else {
                     browser.tabs.sendMessage(requestData.tabId, {
                         'func': 'tip',

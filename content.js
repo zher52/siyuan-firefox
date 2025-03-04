@@ -16,6 +16,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 return
             }
 
+            if ('reload' === request.func) {
+                window.location.reload()
+                return
+            }
+
             if ('copy' !== request.func) {
                 return
             }
@@ -119,7 +124,7 @@ function isIgnoredElement(element) {
         }
 
         element = element.parentElement; // 移动到父元素
-        if(!element) {
+        if (!element) {
             break;
         }
 
@@ -237,7 +242,8 @@ function siyuanProcessBoldStyle(tempElement) {
 function parentContainsBold(element) {
     let parent = element.parentElement;
     while (parent) {
-        if (parent.tagName === 'B' || parent.tagName === 'STRONG') {
+        if (parent.tagName === 'B' || parent.tagName === 'STRONG' ||
+            parent.tagName === 'H1' || parent.tagName === 'H2' || parent.tagName === 'H3' || parent.tagName === 'H4' || parent.tagName === 'H5' || parent.tagName === 'H6') {
             return true;
         }
         parent = parent.parentElement;
@@ -381,6 +387,69 @@ function siyuanRemoveImgLink(tempElement) {
     });
 }
 
+function adaptMSN(tempDoc) {
+    if (tempDoc.documentURI.indexOf("msn.cn") !== -1) {
+        // 删除掉其他不相关文章
+        const articles = document.querySelectorAll(".consumption-page-gridarea_content");
+        articles.forEach(article => {
+            const shadowHost = article.querySelector("views-header-wc");
+            if (!shadowHost) {
+                return;
+            }
+            if (!shadowHost.shadowRoot) {
+                return;
+            }
+
+            const titleEle = shadowHost.shadowRoot.querySelector("h1");
+            if (!titleEle) {
+                return;
+            }
+
+            if (titleEle.innerText.indexOf(tempDoc.title) === -1) {
+                article.remove();
+            }
+        });
+
+        // 将 Shadow DOM 展开
+        const shadowHosts = document.querySelectorAll('cp-article');
+        shadowHosts.forEach(element => {
+            const shadowRoot = element.shadowRoot;
+            if (!shadowRoot) {
+                return;
+            }
+
+            const slots = shadowRoot.querySelectorAll('slot');
+            slots.forEach(slot => {
+                const slotName = slot.getAttribute('name');
+                element.querySelectorAll(`[slot="${slotName}"]`).forEach(slotElement => {
+                    const imgEle = slotElement.querySelector("cp-article-image");
+                    if (!imgEle) {
+                        return;
+                    }
+                    const imgShadowRoot = imgEle.shadowRoot;
+                    if (!imgShadowRoot) {
+                        return;
+                    }
+                    const imgs = imgShadowRoot.querySelectorAll('img');
+                    if (!imgs || imgs.length === 0) {
+                        return;
+                    }
+                    slotElement.innerHTML = ""
+                    imgs.forEach(img => {
+                        slotElement.appendChild(img.cloneNode(true));
+                    });
+                    slot.innerHTML = slotElement.innerHTML;
+                });
+            });
+
+            const shadowContent = shadowRoot.innerHTML;
+            const newDiv = document.createElement('div');
+            newDiv.innerHTML = shadowContent;
+            element.parentNode.replaceChild(newDiv, element);
+        });
+    }
+}
+
 // 重构并合并 Readability 前处理 https://github.com/siyuan-note/siyuan/issues/13306
 async function siyuanGetCloneNode(tempDoc) {
     let items;
@@ -408,6 +477,9 @@ async function siyuanGetCloneNode(tempDoc) {
             expRemoveImgLink: false,
         };
     }
+
+    // 适配 MSN 页面 https://github.com/siyuan-note/siyuan/issues/14197
+    adaptMSN(tempDoc);
 
     // 前处理，增加可识别样式
     if (items.expBold) {
@@ -539,7 +611,7 @@ const siyuanSendUpload = async (tempElement, tabId, srcUrl, type, article, href)
                 item.setAttribute('src', src)
             }
 
-            if (-1 < item.className.indexOf("ztext-gif") &&  -1 < src.indexOf("zhimg.com")) {
+            if (-1 < item.className.indexOf("ztext-gif") && -1 < src.indexOf("zhimg.com")) {
                 // 处理知乎动图
                 src = src.replace(".jpg", ".webp")
             }
