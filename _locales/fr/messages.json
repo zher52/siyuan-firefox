@@ -51,6 +51,12 @@
   "exp_remove_img_link": {
     "message": "Supprimer le lien de l'image*"
   },
+  "exp_list_doc_tree": {
+    "message": "Après extraction de page web, afficher l'arborescence du document*"
+  },
+  "exp_svg_to_img": {
+    "message": "Détecter SVG intégré dans HTML*"
+  },
   "language": {
     "message": "Langue*"
   },

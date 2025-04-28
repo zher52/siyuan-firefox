@@ -12,6 +12,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const expBoldElement = document.getElementById('expBold')
     const expItalicElement = document.getElementById('expItalic')
     const expRemoveImgLinkElement = document.getElementById('expRemoveImgLink')
+    const expListDocTreeElement = document.getElementById('expListDocTree')
+    const expSvgToImgElement = document.getElementById('expSvgToImg')
     const languageElement = document.getElementById('language')
 
     ipElement.addEventListener('change', () => {
@@ -90,6 +92,16 @@ document.addEventListener('DOMContentLoaded', () => {
             expRemoveImgLink: expRemoveImgLinkElement.checked,
         })
     })
+    expListDocTreeElement.addEventListener('change', () => {
+        browser.storage.sync.set({
+            expListDocTree: expListDocTreeElement.checked,
+        })
+    })
+    expSvgToImgElement.addEventListener('change', () => {
+        browser.storage.sync.set({
+            expSvgToImg: expSvgToImgElement.checked,
+        })
+    })
     expElement.addEventListener('change', function () {
         if (expElement.checked) {
             expGroupElement.style.display = 'block';
@@ -144,14 +156,16 @@ document.addEventListener('DOMContentLoaded', () => {
         parentHPath: '',
         tags: '',
         assets: true,
-        expSpan: true,
+        expSpan: false,
         expBold: false,
         expItalic: false,
         expRemoveImgLink: false,
+        expListDocTree: false,
+        expSvgToImg: false,
     }, async function (items) {
         items = items ? items: {};
         siyuanLoadLanguageFile(items.langCode, (data) => {
-            siyuanTranslateDOM(data); // 在这里使用加载的数据
+            siyuanTranslateDOM(data); // 在这里使用加载的i18n数据
             languageElement.value = items.langCode;
         });
         items = items ? items: {};
@@ -168,6 +182,8 @@ document.addEventListener('DOMContentLoaded', () => {
         expBoldElement.checked = items.expBold
         expItalicElement.checked = items.expItalic
         expRemoveImgLinkElement.checked = items.expRemoveImgLink
+        expListDocTreeElement.checked = items.expListDocTree
+        expSvgToImgElement.checked = items.expSvgToImg
         updateSearch()
     })
 })

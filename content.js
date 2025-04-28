@@ -387,6 +387,41 @@ function siyuanRemoveImgLink(tempElement) {
     });
 }
 
+// 将 SVG 转换为 Base64 编码的 Data URI https://github.com/siyuan-note/siyuan/issues/14523
+// 修复网页内嵌SVG包含非Latin字符导致剪藏报错 https://github.com/siyuan-note/siyuan/issues/14669
+async function siyuanSvgToBase64(svgNode) {
+    const serializer = new XMLSerializer();
+    let svgStr = serializer.serializeToString(svgNode);
+
+    if (!svgStr.startsWith('<?xml')) {
+        svgStr = '<?xml version="1.0" encoding="UTF-8"?>' + svgStr;
+    }
+
+    const svgBlob = new Blob([svgStr], { type: 'image/svg+xml' });
+
+    const dataUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(svgBlob);
+    });
+
+    return dataUrl; // 返回 base64 编码的 data URL
+}
+
+async function siyuanSvgToImg(tempElement) {
+    const svgElements = tempElement.querySelectorAll('svg');
+    console.log(`Found ${svgElements.length} SVG elements`);
+
+    for (const svg of svgElements) {
+        const img = document.createElement('img');
+        img.src = await siyuanSvgToBase64(svg);
+        img.style.cssText = window.getComputedStyle(svg).cssText;
+        svg.parentNode.replaceChild(img, svg);
+    }
+}
+
+
 function adaptMSN(tempDoc) {
     if (tempDoc.documentURI.indexOf("msn.cn") !== -1) {
         // 删除掉其他不相关文章
@@ -456,10 +491,11 @@ async function siyuanGetCloneNode(tempDoc) {
     try {
         items = await new Promise((resolve, reject) => {
             browser.storage.sync.get({
-                expSpan: true,
+                expSpan: false,
                 expBold: false,
                 expItalic: false,
                 expRemoveImgLink: false,
+                expSvgToImg: false,
             }, (result) => {
                 if (browser.runtime.lastError) {
                     reject(browser.runtime.lastError);
@@ -471,10 +507,11 @@ async function siyuanGetCloneNode(tempDoc) {
     } catch (error) {
         console.error("获取失败，错误信息：", error);
         items = {
-            expSpan: true,
+            expSpan: false,
             expBold: false,
             expItalic: false,
             expRemoveImgLink: false,
+            expSvgToImg: false,
         };
     }
 
@@ -501,6 +538,12 @@ async function siyuanGetCloneNode(tempDoc) {
         // 网页换行用 span 样式 word-break 的特殊处理 https://github.com/siyuan-note/siyuan/issues/13195
         // 处理会换行的 span 后添加 <br>，让内核能识别到换行
         siyuanSpansAddBr(tempDoc);
+    }
+
+    if (items.expSvgToImg) {
+        // 将网页内嵌的SVG节点转换成内嵌的IMG节点
+        // https://github.com/siyuan-note/siyuan/issues/14523
+        await siyuanSvgToImg(tempDoc);
     }
 
     // 合并嵌套的标签
@@ -575,10 +618,11 @@ const siyuanSendUpload = async (tempElement, tabId, srcUrl, type, article, href)
         parentHPath: '',
         tags: '',
         assets: true,
-        expSpan: true,
+        expSpan: false,
         expBold: false,
         expItalic: false,
         expRemoveImgLink: false,
+        expListDocTree: false,
     }, async function (items) {
         if (!items.token) {
             siyuanShowTipByKey("tip_token_miss")
@@ -693,6 +737,7 @@ const siyuanSendUpload = async (tempElement, tabId, srcUrl, type, article, href)
             title: title,
             siteName: siteName,
             excerpt: excerpt,
+            listDocTree: items.expListDocTree,
             href,
             type,
             tabId,

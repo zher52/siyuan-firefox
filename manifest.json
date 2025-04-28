@@ -46,8 +46,5 @@
       "id": "siyuan-extension@zher52.cn"
     }
   },
-  "content_security_policy": {
-    "extension_pages": "script-src 'self' blob:; object-src 'self' blob:;"
-  },
-  "version": "1.9.14"
+  "version": "1.10.1"
 }
