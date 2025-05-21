@@ -8,7 +8,6 @@
   "copy_to_siyuan": {
     "message": "SiYuanにコピー"
   },
-  
   "show_tip": {
     "message": "ヒントを表示"
   },
@@ -63,7 +62,6 @@
   "send": {
     "message": "SiYuanに送信"
   },
-
   "tip_first_time": {
     "message": "SiYuan拡張機能を初めてインストールした後、使用する前にページを更新してください"
   },
@@ -85,7 +83,37 @@
   "tip_save_path_miss": {
     "message": "コンテンツをクリッピングする前に保存先を選択してください"
   },
+  "tip_img_fetch": {
+    "message": "このページのいくつかの画像をダウンロードできませんでした。ノートブックのカーネルがダウンロードを試みます。"
+  },
+  "tip_auth_failed": {
+    "message": "認証に失敗しました。トークンが正しいか確認してください"
+  },
+  "tip_api_invalid": {
+    "message": "APIリクエストに失敗しました。APIアドレスと形式を確認してください"
+  },
+  "tip_siyuan_ip_invalid": {
+    "message": "SiYuanのアドレスが正しくありません。SiYuanが有効になっているか、IPアドレスが正しく設定されているか確認してください"
+  },
+  "tip_network_error": {
+    "message": "ネットワークリクエストエラー"
+  },
   "tip_siyuan_kernel_unavailable": {
     "message": "SiYuanを起動し、ネットワーク接続が確立されていることを確認してから再試行してください"
+  },
+  "template_config": {
+    "message": "クリッピングテンプレート設定"
+  },
+  "template_save": {
+    "message": "保存"
+  },
+  "template_cancel": {
+    "message": "キャンセル"
+  },
+  "template_saved": {
+    "message": "テンプレートが正常に保存されました"
+  },
+  "template_help": {
+    "message": "利用可能な変数:<br>${title} - ページタイトル<br>${url} - ページURL<br>${siteName} - サイト名<br>${date} - 現在の日付 (YYYY-MM-DD)<br>${time} - 現在の時刻 (HH:MM)<br>${tags} - タグ<br>${excerpt} - ページの抜粋<br>${content} - ページ内容"
   }
 }
