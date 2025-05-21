@@ -1,16 +1,15 @@
-## SiYuan Chrome Extension 
+## SiYuan Firefox Extension
 
 [中文](https://github.com/siyuan-note/siyuan-chrome/blob/main/README_zh_CN.md)
 
 ### 💡 Introduction
 
-A Chrome extension for SiYuan.
+A Firefox extension for SiYuan. This is a fork of the [original Chrome extension](https://github.com/siyuan-note/siyuan-chrome).
 
 ### 🛠️ Setup
 
-* Chrome: [SiYuan - Chrome Web Store](https://browser.google.com/webstore/detail/siyuan/hkcgjbeblifaincobbcfiffbpgoafepk)
-* Edge: [SiYuan - Microsoft Edge Addons](https://microsoftedge.microsoft.com/addons/detail/siyuan/lclhdlhleinlppggbbgimbekofanbkcf)
-* GitHub: [siyuan-note/siyuan-chrome](https://github.com/siyuan-note/siyuan-chrome)
+* Firefox: [SiYuan - Firefox Add-ons](https://addons.mozilla.org/en-US/firefox/addon/siyuan/)
+* GitHub: [siyuan-firefox](https://github.com/zher52/siyuan-firefox)
 
 ### ✨  Usages
 
@@ -22,3 +21,9 @@ A Chrome extension for SiYuan.
 
 * All data is saved on a device under the full control of the user himself
 * No usage data will be collected
+
+### 🔄 Differences from Chrome Extension
+
+* Adapted for Firefox browser compatibility
+* Updated localization support
+* Maintained feature parity with the Chrome version
