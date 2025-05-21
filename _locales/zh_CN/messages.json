@@ -8,7 +8,6 @@
   "copy_to_siyuan": {
     "message": "复制到思源(SiYuan)"
   },
-  
   "show_tip": {
     "message": "显示提示"
   },
@@ -85,7 +84,37 @@
   "tip_save_path_miss": {
     "message": "剪藏前请先选择保存路径"
   },
+  "tip_img_fetch": {
+    "message": "该页面上部分图片下载失败，笔记本内核会尝试下载它们。"
+  },
+  "tip_auth_failed": {
+    "message": "认证失败，检查 token 是否正确"
+  },
+  "tip_api_invalid": {
+    "message": "API 请求失败，检查 API 地址和格式"
+  },
+  "tip_siyuan_ip_invalid": {
+    "message": "思源地址错误，请检查思源是否启用以及 IP 地址是否设置正确"
+  },
+  "tip_network_error": {
+    "message": "网络请求错误"
+  },
   "tip_siyuan_kernel_unavailable": {
     "message": "请启动思源并确保网络连通后再试"
+  },
+  "template_config": {
+    "message": "剪藏模板配置"
+  },
+  "template_save": {
+    "message": "保存"
+  },
+  "template_cancel": {
+    "message": "取消"
+  },
+  "template_saved": {
+    "message": "模板保存成功"
+  },
+  "template_help": {
+    "message": "可用变量：<br>${title} - 页面标题<br>${url} - 页面URL<br>${siteName} - 网站名称<br>${date} - 当前日期 (YYYY-MM-DD)<br>${time} - 当前时间 (HH:MM)<br>${tags} - 标签<br>${excerpt} - 页面摘要<br>${content} - 页面内容"
   }
 }

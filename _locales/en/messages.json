@@ -8,7 +8,6 @@
   "copy_to_siyuan": {
     "message": "Copy to SiYuan"
   },
-  
   "show_tip": {
     "message": "Show Tip"
   },
@@ -74,7 +73,7 @@
     "message": "Clipping images"
   },
   "tip_clip_ok": {
-    "message": "Clipping successfully"
+    "message": "The page has been successfully clipped."
   },
   "tip_token_miss": {
     "message": "Please config API token before clipping content"
@@ -85,7 +84,37 @@
   "tip_save_path_miss": {
     "message": "Please select save path before clipping content"
   },
+  "tip_img_fetch": {
+    "message": "Failed to download some images on this page. The notebook kernel will try to download them."
+  },
+  "tip_auth_failed": {
+    "message": "Authentication failed, check whether the token is correct"
+  },
+  "tip_api_invalid": {
+    "message": "API request failed, check API address and format"
+  },
+  "tip_siyuan_ip_invalid": {
+    "message": "SiYuan address is incorrect, please check whether SiYuan is enabled and whether the IP address is set correctly"
+  },
+  "tip_network_error": {
+    "message": "Network request error"
+  },
   "tip_siyuan_kernel_unavailable": {
     "message": "Please start SiYuan and ensure network connectivity before trying again"
+  },
+  "template_config": {
+    "message": "Clipping Template Configuration"
+  },
+  "template_save": {
+    "message": "Save"
+  },
+  "template_cancel": {
+    "message": "Cancel"
+  },
+  "template_saved": {
+    "message": "Template saved successfully"
+  },
+  "template_help": {
+    "message": "Available variables:<br>${title} - Page title<br>${url} - Page URL<br>${siteName} - Site name<br>${date} - Current date (YYYY-MM-DD)<br>${time} - Current time (HH:MM)<br>${tags} - Tags<br>${excerpt} - Page excerpt<br>${content} - Page content"
   }
 }

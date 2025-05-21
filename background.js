@@ -81,84 +81,86 @@ browser.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
 
         if (requestData.type === 'article') {
             let title = requestData.title ? requestData.title : 'Untitled'
-            let markdown = "---\n\n* " + title
             title = title.replaceAll("/", "")
-            const siteName = requestData.siteName
-            if ("" !== siteName) {
-                markdown += " - " + siteName
-            }
-            markdown += "\n"
-            const href = requestData.href
-            let linkText = href
-            try {
-                linkText = decodeURIComponent(linkText)
-            } catch (e) {
-                console.warn(e)
-            }
-            markdown += "* " + "[" + linkText + "](" + href + ")\n"
-            let excerpt = requestData.excerpt.trim()
-            if ("" !== excerpt) {
-                // 将连续的三个换行符替换为两个换行符
-                excerpt = excerpt.replace(/\n{3,}/g, "\n\n")
-                // 从第二行开始，每行前面加两个空格 https://github.com/siyuan-note/siyuan/issues/11315
-                excerpt = excerpt.replace(/\n/g, "\n  ")
-                excerpt = excerpt.trim()
-                markdown += "* " + excerpt + "\n"
-            } else {
-                markdown += "\n"
-            }
-            markdown += "* " + getDateTime() + "\n\n---\n\n" + response.data.md
 
-            fetch(requestData.api + '/api/filetree/createDocWithMd', {
-                method: 'POST',
-                headers: {
-                    'Authorization': 'Token ' + requestData.token,
-                },
-                body: JSON.stringify({
-                    'notebook': requestData.notebook,
-                    'parentID': requestData.parentDoc,
-                    'tags': requestData.tags,
-                    'path': requestData.parentHPath + "/" + title,
-                    'markdown': markdown,
-                    'withMath': response.data.withMath,
-                    'clippingHref': requestData.href,
-                    'listDocTree': requestData.listDocTree,
-                }),
-            }).then((response) => {
-                return response.json()
-            }).then((response) => {
-                if (0 === response.code) {
-                    browser.tabs.sendMessage(requestData.tabId, {
-                        'func': 'tipKey',
-                        'msg': "tip_clip_ok",
-                        'tip': requestData.tip,
-                    })
+            // 获取模板数据
+            browser.storage.sync.get({
+                clipTemplate: '---\n\n-  ${title}\n- [${url}](${url}) \n-  ${date}  ${time}\n- ${excerpt}\n\n---\n\n${content}',
+            }, (items) => {
+                // 准备模板数据
+                const { date, time } = getSimpleDateTime();
+                const templateData = {
+                    title: requestData.title || 'Untitled',
+                    siteName: requestData.siteName || '',
+                    excerpt: requestData.excerpt || '',
+                    url: requestData.href,
+                    date,
+                    time,
+                    tags: requestData.tags,
+                    content: response.data.md
+                };
 
-                    if (fetchFileErr) {
-                        // 可能因为跨域问题导致下载图片失败，这里调用内核接口 `网络图片转换为本地图片` https://github.com/siyuan-note/siyuan/issues/7224
-                        fetch(requestData.api + '/api/format/netImg2LocalAssets', {
-                            method: 'POST',
-                            headers: {
-                                'Authorization': 'Token ' + requestData.token,
-                            },
-                            body: JSON.stringify({
-                                'id': response.data,
-                                'url': requestData.href, // 改进浏览器剪藏扩展转换本地图片成功率 https://github.com/siyuan-note/siyuan/issues/7464
-                            }),
+                // 渲染模板
+                let markdown;
+                try {
+                    markdown = renderTemplate(items.clipTemplate, templateData);
+                } catch (e) {
+                    console.error('Template rendering error:', e);
+                    // 如果模板渲染失败，使用默认格式
+                    markdown = getDefaultMarkdown(requestData, response.data.md);
+                }
+
+                fetch(requestData.api + '/api/filetree/createDocWithMd', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Token ' + requestData.token,
+                    },
+                    body: JSON.stringify({
+                        'notebook': requestData.notebook,
+                        'parentID': requestData.parentDoc,
+                        'tags': requestData.tags,
+                        'path': requestData.parentHPath + "/" + title,
+                        'markdown': markdown,
+                        'withMath': response.data.withMath,
+                        'clippingHref': requestData.href,
+                        'listDocTree': requestData.listDocTree,
+                    }),
+                }).then((response) => {
+                    return response.json()
+                }).then((response) => {
+                    if (0 === response.code) {
+                        browser.tabs.sendMessage(requestData.tabId, {
+                            'func': 'tipKey',
+                            'msg': "tip_clip_ok",
+                            'tip': requestData.tip,
+                        })
+
+                        if (fetchFileErr) {
+                            // 可能因为跨域问题导致下载图片失败，这里调用内核接口 `网络图片转换为本地图片` https://github.com/siyuan-note/siyuan/issues/7224
+                            fetch(requestData.api + '/api/format/netImg2LocalAssets', {
+                                method: 'POST',
+                                headers: {
+                                    'Authorization': 'Token ' + requestData.token,
+                                },
+                                body: JSON.stringify({
+                                    'id': response.data,
+                                    'url': requestData.href, // 改进浏览器剪藏扩展转换本地图片成功率 https://github.com/siyuan-note/siyuan/issues/7464
+                                }),
+                            })
+                        }
+
+                        browser.tabs.sendMessage(requestData.tabId, {
+                            'func': 'reload',
+                        })
+                    } else {
+                        browser.tabs.sendMessage(requestData.tabId, {
+                            'func': 'tip',
+                            'msg': response.msg,
+                            'tip': requestData.tip,
                         })
                     }
-
-                    browser.tabs.sendMessage(requestData.tabId, {
-                        'func': 'reload',
-                    })
-                } else {
-                    browser.tabs.sendMessage(requestData.tabId, {
-                        'func': 'tip',
-                        'msg': response.msg,
-                        'tip': requestData.tip,
-                    })
-                }
-            })
+                })
+            });
         }
     }).catch((e) => {
         console.error(e)
@@ -194,4 +196,62 @@ function getDateTime() {
         second = '0' + second;
     }
     return year + '-' + month + '-' + day + ' ' + hour + ':' + minute + ':' + second;
+}
+
+// 添加模板渲染函数
+function renderTemplate(template, data) {
+    return template.replace(/\${([^}]+)}/g, function (match, key) {
+        // 支持简单的条件表达式，如 ${siteName ? "- " + siteName : ""}
+        if (key.indexOf('?') > -1) {
+            try {
+                return new Function('data', 'with(data) { return ' + key + '; }')(data);
+            } catch (e) {
+                console.error('Error evaluating template expression:', key, e);
+                return '';
+            }
+        }
+
+        // 普通变量替换
+        const value = key.split('.').reduce((obj, prop) => obj && obj[prop], data);
+        return value !== undefined ? value : '';
+    });
+}
+
+// 获取简单日期时间
+function getSimpleDateTime() {
+    const now = new Date();
+    const date = now.toISOString().slice(0, 10);
+    const time = now.toTimeString().slice(0, 5);
+    return { date, time };
+}
+
+// 默认剪藏格式的处理函数（当模板渲染失败时使用）
+function getDefaultMarkdown(requestData, contentMd) {
+    let markdown = "---\n\n* " + (requestData.title || 'Untitled')
+    const siteName = requestData.siteName
+    if ("" !== siteName) {
+        markdown += " - " + siteName
+    }
+    markdown += "\n"
+    const href = requestData.href
+    let linkText = href
+    try {
+        linkText = decodeURIComponent(linkText)
+    } catch (e) {
+        console.warn(e)
+    }
+    markdown += "* " + "[" + linkText + "](" + href + ")\n"
+    let excerpt = requestData.excerpt.trim()
+    if ("" !== excerpt) {
+        // 将连续的三个换行符替换为两个换行符
+        excerpt = excerpt.replace(/\n{3,}/g, "\n\n")
+        // 从第二行开始，每行前面加两个空格 https://github.com/siyuan-note/siyuan/issues/11315
+        excerpt = excerpt.replace(/\n/g, "\n  ")
+        excerpt = excerpt.trim()
+        markdown += "* " + excerpt + "\n"
+    } else {
+        markdown += "\n"
+    }
+    markdown += "* " + getDateTime() + "\n\n---\n\n" + contentMd
+    return markdown;
 }
