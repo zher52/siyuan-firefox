@@ -62,7 +62,6 @@
   "send": {
     "message": "Send to SiYuan"
   },
-
   "tip_first_time": {
     "message": "After installing the SiYuan extension for the first time, please refresh the page before using it"
   },

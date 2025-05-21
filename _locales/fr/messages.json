@@ -8,7 +8,6 @@
   "copy_to_siyuan": {
     "message": "Copier vers SiYuan"
   },
-  
   "show_tip": {
     "message": "Afficher les astuces"
   },
@@ -63,7 +62,6 @@
   "send": {
     "message": "Envoyer à SiYuan"
   },
-
   "tip_first_time": {
     "message": "Après avoir installé l'extension SiYuan pour la première fois, veuillez rafraîchir la page avant de l'utiliser"
   },
@@ -85,7 +83,37 @@
   "tip_save_path_miss": {
     "message": "Veuillez sélectionner le chemin de sauvegarde avant de recouper le contenu"
   },
+  "tip_img_fetch": {
+    "message": "Échec du téléchargement de certaines images sur cette page. Le noyau du carnet essaiera de les télécharger."
+  },
+  "tip_auth_failed": {
+    "message": "Échec d'authentification, vérifiez si le jeton est correct"
+  },
+  "tip_api_invalid": {
+    "message": "Échec de la requête API, vérifiez l'adresse API et le format"
+  },
+  "tip_siyuan_ip_invalid": {
+    "message": "L'adresse SiYuan est incorrecte, veuillez vérifier si SiYuan est activé et si l'adresse IP est correctement configurée"
+  },
+  "tip_network_error": {
+    "message": "Erreur de requête réseau"
+  },
   "tip_siyuan_kernel_unavailable": {
     "message": "Veuillez démarrer SiYuan et vous assurer que la connexion réseau fonctionne avant de réessayer"
+  },
+  "template_config": {
+    "message": "Configuration du modèle de clipping"
+  },
+  "template_save": {
+    "message": "Enregistrer"
+  },
+  "template_cancel": {
+    "message": "Annuler"
+  },
+  "template_saved": {
+    "message": "Modèle enregistré avec succès"
+  },
+  "template_help": {
+    "message": "Variables disponibles:<br>${title} - Titre de la page<br>${url} - URL de la page<br>${siteName} - Nom du site<br>${date} - Date actuelle (AAAA-MM-JJ)<br>${time} - Heure actuelle (HH:MM)<br>${tags} - Tags<br>${excerpt} - Extrait de la page<br>${content} - Contenu de la page"
   }
 }

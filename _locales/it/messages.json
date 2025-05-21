@@ -62,7 +62,6 @@
   "send": {
     "message": "Invia a SiYuan"
   },
-
   "tip_first_time": {
     "message": "Dopo aver installato l'estensione SiYuan per la prima volta, aggiorna la pagina prima di utilizzarla"
   },
@@ -84,7 +83,37 @@
   "tip_save_path_miss": {
     "message": "Seleziona il percorso di salvataggio prima di eseguire il clipping"
   },
+  "tip_img_fetch": {
+    "message": "Impossibile scaricare alcune immagini su questa pagina. Il kernel del notebook tenterà di scaricarle."
+  },
+  "tip_auth_failed": {
+    "message": "Autenticazione fallita, verifica se il token è corretto"
+  },
+  "tip_api_invalid": {
+    "message": "Richiesta API fallita, verifica l'indirizzo API e il formato"
+  },
+  "tip_siyuan_ip_invalid": {
+    "message": "Indirizzo SiYuan non corretto, verifica se SiYuan è attivo e se l'indirizzo IP è configurato correttamente"
+  },
+  "tip_network_error": {
+    "message": "Errore di richiesta di rete"
+  },
   "tip_siyuan_kernel_unavailable": {
     "message": "Avvia SiYuan e assicurati che la connessione di rete funzioni prima di riprovare"
+  },
+  "template_config": {
+    "message": "Configurazione modello di clipping"
+  },
+  "template_save": {
+    "message": "Salva"
+  },
+  "template_cancel": {
+    "message": "Annulla"
+  },
+  "template_saved": {
+    "message": "Modello salvato con successo"
+  },
+  "template_help": {
+    "message": "Variabili disponibili:<br>${title} - Titolo della pagina<br>${url} - URL della pagina<br>${siteName} - Nome del sito<br>${date} - Data corrente (YYYY-MM-DD)<br>${time} - Ora corrente (HH:MM)<br>${tags} - Tag<br>${excerpt} - Estratto della pagina<br>${content} - Contenuto della pagina"
   }
 }

@@ -8,7 +8,6 @@
   "copy_to_siyuan": {
     "message": "העתק ל-SiYuan"
   },
-  
   "show_tip": {
     "message": "הצג טיפים"
   },
@@ -63,7 +62,6 @@
   "send": {
     "message": "שלח ל-SiYuan"
   },
-
   "tip_first_time": {
     "message": "לאחר התקנת תוסף SiYuan לראשונה, אנא רענן את הדף לפני השימוש"
   },
@@ -85,7 +83,37 @@
   "tip_save_path_miss": {
     "message": "אנא בחר את נתיב השמירה לפני חיתוך התוכן"
   },
+  "tip_img_fetch": {
+    "message": "נכשל בהורדת חלק מהתמונות בדף זה. ליבת המחברת תנסה להוריד אותן."
+  },
+  "tip_auth_failed": {
+    "message": "האימות נכשל, בדוק אם האסימון נכון"
+  },
+  "tip_api_invalid": {
+    "message": "בקשת ה-API נכשלה, בדוק את כתובת ה-API והפורמט"
+  },
+  "tip_siyuan_ip_invalid": {
+    "message": "כתובת SiYuan שגויה, אנא בדוק אם SiYuan מופעל ואם כתובת ה-IP מוגדרת נכון"
+  },
+  "tip_network_error": {
+    "message": "שגיאת בקשת רשת"
+  },
   "tip_siyuan_kernel_unavailable": {
     "message": "אנא הפעל את SiYuan וודא שהחיבור לרשת פעיל לפני שתנסה שוב"
+  },
+  "template_config": {
+    "message": "הגדרות תבנית חיתוך"
+  },
+  "template_save": {
+    "message": "שמור"
+  },
+  "template_cancel": {
+    "message": "בטל"
+  },
+  "template_saved": {
+    "message": "התבנית נשמרה בהצלחה"
+  },
+  "template_help": {
+    "message": "משתנים זמינים:<br>${title} - כותרת הדף<br>${url} - כתובת URL של הדף<br>${siteName} - שם האתר<br>${date} - תאריך נוכחי (YYYY-MM-DD)<br>${time} - שעה נוכחית (HH:MM)<br>${tags} - תגים<br>${excerpt} - תקציר הדף<br>${content} - תוכן הדף"
   }
 }
