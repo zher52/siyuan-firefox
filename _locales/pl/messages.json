@@ -8,7 +8,6 @@
   "copy_to_siyuan": {
     "message": "Skopiuj do SiYuan"
   },
-  
   "show_tip": {
     "message": "Pokaż wskazówki"
   },
@@ -63,7 +62,6 @@
   "send": {
     "message": "Wyślij do SiYuan"
   },
-
   "tip_first_time": {
     "message": "Po zainstalowaniu rozszerzenia SiYuan po raz pierwszy, odśwież stronę przed użyciem"
   },
@@ -85,7 +83,37 @@
   "tip_save_path_miss": {
     "message": "Wybierz ścieżkę zapisu przed rozpoczęciem clippingu"
   },
+  "tip_img_fetch": {
+    "message": "Nie udało się pobrać niektórych obrazów na tej stronie. Jądro notatnika spróbuje je pobrać."
+  },
+  "tip_auth_failed": {
+    "message": "Uwierzytelnianie nie powiodło się, sprawdź czy token jest poprawny"
+  },
+  "tip_api_invalid": {
+    "message": "Żądanie API nie powiodło się, sprawdź adres API i format"
+  },
+  "tip_siyuan_ip_invalid": {
+    "message": "Adres SiYuan jest nieprawidłowy, sprawdź czy SiYuan jest włączony i czy adres IP jest poprawnie skonfigurowany"
+  },
+  "tip_network_error": {
+    "message": "Błąd żądania sieciowego"
+  },
   "tip_siyuan_kernel_unavailable": {
     "message": "Uruchom SiYuan i upewnij się, że połączenie z siecią jest aktywne przed ponowną próbą"
+  },
+  "template_config": {
+    "message": "Konfiguracja szablonu clippingu"
+  },
+  "template_save": {
+    "message": "Zapisz"
+  },
+  "template_cancel": {
+    "message": "Anuluj"
+  },
+  "template_saved": {
+    "message": "Szablon został pomyślnie zapisany"
+  },
+  "template_help": {
+    "message": "Dostępne zmienne:<br>${title} - Tytuł strony<br>${url} - URL strony<br>${siteName} - Nazwa strony<br>${date} - Aktualna data (YYYY-MM-DD)<br>${time} - Aktualny czas (HH:MM)<br>${tags} - Tagi<br>${excerpt} - Fragment strony<br>${content} - Zawartość strony"
   }
 }
