@@ -8,7 +8,6 @@
   "copy_to_siyuan": {
     "message": "Skopiuj do SiYuan"
   },
-  
   "show_tip": {
     "message": "Pokaż wskazówki"
   },
@@ -58,12 +57,11 @@
     "message": "Wykryj SVG osadzone w HTML*"
   },
   "language": {
-    "message": "Język*"
+    "message": "Język interfejsu"
   },
   "send": {
     "message": "Wyślij do SiYuan"
   },
-
   "tip_first_time": {
     "message": "Po zainstalowaniu rozszerzenia SiYuan po raz pierwszy, odśwież stronę przed użyciem"
   },
@@ -87,5 +85,20 @@
   },
   "tip_siyuan_kernel_unavailable": {
     "message": "Uruchom SiYuan i upewnij się, że połączenie z siecią jest aktywne przed ponowną próbą"
+  },
+  "template_config": {
+    "message": "Konfiguracja szablonu"
+  },
+  "template_save": {
+    "message": "Zapisz"
+  },
+  "template_cancel": {
+    "message": "Anuluj"
+  },
+  "template_saved": {
+    "message": "Szablon został pomyślnie zapisany"
+  },
+  "template_help": {
+    "message": "Zmienne dostępne:<br>${title} - Tytuł strony<br>${url} - URL strony<br>${siteName} - Nazwa witryny<br>${date} - Bieżąca data (yyyy-MM-dd)<br>${time} - Bieżący czas (HH:mm)<br>${tags} - Tagi<br>${excerpt} - Fragment strony<br>${content} - Zawartość strony"
   }
 }

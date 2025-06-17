@@ -28,23 +28,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         ipElement.value = ip
 
-        browser.storage.sync.set({
+        chrome.storage.sync.set({
             ip: ipElement.value,
         })
     })
     tokenElement.addEventListener('change', () => {
-        browser.storage.sync.set({
+        chrome.storage.sync.set({
             token: tokenElement.value,
         })
         updateSearch()
     })
     showTipElement.addEventListener('change', () => {
-        browser.storage.sync.set({
+        chrome.storage.sync.set({
             showTip: showTipElement.checked,
         })
     })
     searchDocElement.addEventListener('change', () => {
-        browser.storage.sync.set({
+        chrome.storage.sync.set({
             searchKey: searchDocElement.value,
         })
         updateSearch()
@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const notebook = selectedOption.getAttribute('data-notebook');
         const parentDoc = selectedOption.getAttribute('data-parent');
 
-        browser.storage.sync.set({
+        chrome.storage.sync.set({
             notebook: notebook,
             parentDoc: parentDoc,
             parentHPath: selectedOption.innerText,
@@ -63,42 +63,102 @@ document.addEventListener('DOMContentLoaded', () => {
     })
     tagsElement.addEventListener('change', () => {
         tagsElement.value = tagsElement.value.replace(/#/g, '')
-        browser.storage.sync.set({
+        chrome.storage.sync.set({
             tags: tagsElement.value,
         })
     })
+
+    // 添加模板配置按钮点击事件
+    const templateConfigBtn = document.getElementById('templateConfig')
+    if (templateConfigBtn) {
+        templateConfigBtn.addEventListener('click', () => {
+            // 打开模板配置弹窗
+            const templateModal = document.getElementById('templateModal')
+            if (templateModal) {
+                templateModal.style.display = 'block'
+            }
+        })
+    }
+
+    // 添加模板保存按钮事件
+    const saveTemplateBtn = document.getElementById('saveTemplate')
+    if (saveTemplateBtn) {
+        saveTemplateBtn.addEventListener('click', () => {
+            const templateText = document.getElementById('templateText').value
+            chrome.storage.sync.set({
+                clipTemplate: templateText,
+            }, () => {
+                const templateModal = document.getElementById('templateModal')
+                if (templateModal) {
+                    templateModal.style.display = 'none'
+
+                    // 显示保存成功提示
+                    const templateSavedMsg = document.getElementById('templateSavedMsg')
+                    if (templateSavedMsg) {
+                        templateSavedMsg.style.display = 'block'
+                        setTimeout(() => {
+                            templateSavedMsg.style.display = 'none'
+                        }, 2000)
+                    }
+                }
+            })
+        })
+    }
+
+    // 添加模板取消按钮事件
+    const cancelTemplateBtn = document.getElementById('cancelTemplate')
+    if (cancelTemplateBtn) {
+        cancelTemplateBtn.addEventListener('click', () => {
+            const templateModal = document.getElementById('templateModal')
+            if (templateModal) {
+                templateModal.style.display = 'none'
+            }
+        })
+    }
+
+    // 添加关闭模板配置弹窗按钮事件
+    const closeTemplateBtn = document.getElementById('closeTemplate')
+    if (closeTemplateBtn) {
+        closeTemplateBtn.addEventListener('click', () => {
+            const templateModal = document.getElementById('templateModal')
+            if (templateModal) {
+                templateModal.style.display = 'none'
+            }
+        })
+    }
+
     assetsElement.addEventListener('change', () => {
-        browser.storage.sync.set({
+        chrome.storage.sync.set({
             assets: assetsElement.checked,
         })
     })
     expSpanElement.addEventListener('change', () => {
-        browser.storage.sync.set({
+        chrome.storage.sync.set({
             expSpan: expSpanElement.checked,
         })
     })
     expBoldElement.addEventListener('change', () => {
-        browser.storage.sync.set({
+        chrome.storage.sync.set({
             expBold: expBoldElement.checked,
         })
     })
     expItalicElement.addEventListener('change', () => {
-        browser.storage.sync.set({
+        chrome.storage.sync.set({
             expItalic: expItalicElement.checked,
         })
     })
     expRemoveImgLinkElement.addEventListener('change', () => {
-        browser.storage.sync.set({
+        chrome.storage.sync.set({
             expRemoveImgLink: expRemoveImgLinkElement.checked,
         })
     })
     expListDocTreeElement.addEventListener('change', () => {
-        browser.storage.sync.set({
+        chrome.storage.sync.set({
             expListDocTree: expListDocTreeElement.checked,
         })
     })
     expSvgToImgElement.addEventListener('change', () => {
-        browser.storage.sync.set({
+        chrome.storage.sync.set({
             expSvgToImg: expSvgToImgElement.checked,
         })
     })
@@ -111,12 +171,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     languageElement.addEventListener('change', () => {
         const langCode = languageElement.value;
-        console.log("langCode="+langCode);
+        console.log("langCode=" + langCode);
 
         siyuanLoadLanguageFile(langCode, (data) => {
             siyuanTranslateDOM(data);
         });
-        browser.storage.sync.set({
+        chrome.storage.sync.set({
             langCode: langCode,
         })
     })
@@ -134,9 +194,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const sendElement = document.getElementById('send')
     sendElement.addEventListener('click', () => {
-        browser.tabs.query({currentWindow: true, active: true}, function (tabs) {
-            browser.scripting.executeScript({
-                target: {tabId: tabs[0].id},
+        chrome.tabs.query({ currentWindow: true, active: true }, function (tabs) {
+            chrome.scripting.executeScript({
+                target: { tabId: tabs[0].id },
                 func: siyuanGetReadability,
                 args: [tabs[0].id],
             }, function () {
@@ -145,9 +205,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     })
 
-    browser.storage.sync.get({
+    chrome.storage.sync.get({
         langCode: siyuanGetDefaultLangCode(),
-        ip: '',
+        ip: 'http://127.0.0.1:6806',
         showTip: true,
         token: '',
         searchKey: '',
@@ -162,14 +222,25 @@ document.addEventListener('DOMContentLoaded', () => {
         expRemoveImgLink: false,
         expListDocTree: false,
         expSvgToImg: false,
+        clipTemplate: '---\n\n- ${title}${siteName ? " - " + siteName : ""}\n- [${urlDecoded}](${url}) \n- ${excerpt}\n- ${date} ${time}\n\n---\n\n${content}',
     }, async function (items) {
-        items = items ? items: {};
         siyuanLoadLanguageFile(items.langCode, (data) => {
             siyuanTranslateDOM(data); // 在这里使用加载的i18n数据
             languageElement.value = items.langCode;
+
+            // 更新模板文本框的值
+            const templateText = document.getElementById('templateText')
+            if (templateText) {
+                templateText.value = items.clipTemplate
+
+                // 添加模板变量帮助提示
+                const templateHelp = document.getElementById('templateHelp')
+                if (templateHelp) {
+                    templateHelp.innerHTML = data.template_help ? data.template_help.message : ''
+                }
+            }
         });
-        items = items ? items: {};
-        ipElement.value = items.ip || ''
+        ipElement.value = items.ip || 'http://127.0.0.1:6806'
         tokenElement.value = items.token || ''
         showTipElement.checked = items.showTip
         searchDocElement.value = items.searchKey || ''
@@ -206,10 +277,11 @@ const updateSearch = () => {
         })
     }).then((response) => {
         if (response.status !== 200) {
-            document.getElementById('log').innerHTML = "Authentication failed"
-        } else {
-            document.getElementById('log').innerHTML = ""
+            document.getElementById('log').innerHTML = "Authentication failed, please check API token"
+            return
         }
+
+        document.getElementById('log').innerHTML = ""
         return response.json()
     }).then((response) => {
         if (0 !== response.code) {
@@ -233,14 +305,14 @@ const updateSearch = () => {
             let selected = parentDocElement.querySelector('option[selected]')
             if (!selected) {
                 selected = parentDocElement.selectedOptions[0]
-                browser.storage.sync.set({
+                chrome.storage.sync.set({
                     notebook: selected.getAttribute("data-notebook"),
                     parentDoc: selected.getAttribute("data-parent"),
                     parentHPath: selected.innerText,
                 })
             }
         } else {
-            browser.storage.sync.set({
+            chrome.storage.sync.set({
                 notebook: '',
                 parentDoc: '',
                 parentHPath: ''
@@ -262,7 +334,7 @@ const siyuanGetReadability = async (tabId) => {
     try {
         siyuanShowTipByKey("tip_clipping", 60 * 1000)
     } catch (e) {
-        alert(browser.i18n.getMessage("tip_first_time"));
+        alert(chrome.i18n.getMessage("tip_first_time"));
         window.location.reload();
         return;
     }
@@ -297,7 +369,7 @@ let siyuanLangData = null;
 let siyuanLangCode = null;
 
 function siyuanGetDefaultLangCode() {
-    const langCode = navigator.language || navigator.userLanguage || browser.runtime.getManifest().default_locale;
+    const langCode = navigator.language || navigator.userLanguage || chrome.runtime.getManifest().default_locale;
     const normalizedLangCode = langCode.replace('-', '_');
     return normalizedLangCode;
 }
@@ -312,7 +384,7 @@ async function siyuanMergeTranslations(translations, langCode) {
 
     // 如果当前语言不是英语，则加载英语翻译文件
     if (langCode !== defaultLangCode) {
-        const enTranslationFile = browser.runtime.getURL('_locales/en/messages.json');
+        const enTranslationFile = chrome.runtime.getURL(`_locales/${langCode}/messages.json`);
         try {
             // 异步加载英语翻译文件
             const response = await fetch(enTranslationFile);
@@ -341,7 +413,7 @@ async function siyuanLoadLanguageFile(langCode, callback) {
 
     // 先加载当前语言的翻译文件
     try {
-        const translationFile = browser.runtime.getURL(`_locales/${langCode}/messages.json`);
+        const translationFile = chrome.runtime.getURL(`_locales/${langCode}/messages.json`);
         const response = await fetch(translationFile);
         if (!response.ok) {
             throw new Error('Network response was not ok');
@@ -366,17 +438,24 @@ function siyuanTranslateDOM(translations) {
     const elements = document.querySelectorAll('[data-i18n]');
     elements.forEach(element => {
         const key = element.getAttribute('data-i18n');
-        const translation = translations[key].message;
-        if (translation) {
-            if (element.placeholder !== undefined) {
-                // 翻译 placeholder 属性
-                element.placeholder = translation;
-            } else {
-                // 翻译 textContent
-                element.textContent = translation;
-            }
-        } else {
+        if (!translations[key] || !translations[key].message) {
             console.warn(`siyuanTranslateDOM Missing translation for key: ${key}`);
+            return;
+        }
+
+        const translation = translations[key].message;
+        if (element.placeholder !== undefined) {
+            // 翻译 placeholder 属性
+            element.placeholder = translation;
+        } else {
+            // 翻译 textContent
+            element.textContent = translation;
         }
     });
+
+    // 确保模板帮助文本也被更新
+    const templateHelp = document.getElementById('templateHelp');
+    if (templateHelp && translations.template_help) {
+        templateHelp.innerHTML = translations.template_help.message;
+    }
 }
