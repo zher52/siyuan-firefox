@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function () {
-    chrome.runtime.onMessage.addListener(
+    browser.runtime.onMessage.addListener(
         async (request, sender, sendResponse) => {
             if ('tip' === request.func && request.tip) {
                 siyuanShowTip(request.msg, request.timeout)
@@ -90,7 +90,7 @@ const siyuanShowTip = (msg, timeout) => {
 
 // Add i18n support https://github.com/siyuan-note/siyuan/issues/13559
 const siyuanShowTipByKey = (msgKey, timeout) => {
-    siyuanShowTip(chrome.i18n.getMessage(msgKey), timeout);
+    siyuanShowTip(browser.i18n.getMessage(msgKey), timeout);
 }
 
 const siyuanClearTip = () => {
@@ -523,15 +523,15 @@ async function siyuanGetCloneNode(tempDoc) {
     let items;
     try {
         items = await new Promise((resolve, reject) => {
-            chrome.storage.sync.get({
+            browser.storage.sync.get({
                 expSpan: false,
                 expBold: false,
                 expItalic: false,
                 expRemoveImgLink: false,
                 expSvgToImg: false,
             }, (result) => {
-                if (chrome.runtime.lastError) {
-                    reject(chrome.runtime.lastError);
+                if (browser.runtime.lastError) {
+                    reject(browser.runtime.lastError);
                 } else {
                     resolve(result);
                 }
@@ -636,7 +636,7 @@ async function siyuanGetCloneNode(tempDoc) {
 }
 
 const siyuanSendUpload = async (tempElement, tabId, srcUrl, type, article, href) => {
-    chrome.storage.sync.get({
+    browser.storage.sync.get({
         ip: 'http://127.0.0.1:6806',
         showTip: true,
         token: '',
@@ -712,7 +712,7 @@ const siyuanSendUpload = async (tempElement, tabId, srcUrl, type, article, href)
         let fetchFileErr = false;
         for (let i = 0; i < srcList.length; i++) {
             let src = srcList[i]
-            siyuanShowTip(chrome.i18n.getMessage("tip_clip_img") + ' [' + i + '/' + srcList.length + ']...');
+            siyuanShowTip(browser.i18n.getMessage("tip_clip_img") + ' [' + i + '/' + srcList.length + ']...');
             let response;
             try {
                 // Wikipedia 使用图片原图 https://github.com/siyuan-note/siyuan/issues/11640
@@ -771,6 +771,6 @@ const siyuanSendUpload = async (tempElement, tabId, srcUrl, type, article, href)
             type,
             tabId,
         };
-        chrome.runtime.sendMessage({ func: 'upload-copy', data: msgJSON })
+        browser.runtime.sendMessage({ func: 'upload-copy', data: msgJSON })
     })
 }

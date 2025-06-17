@@ -28,23 +28,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         ipElement.value = ip
 
-        chrome.storage.sync.set({
+        browser.storage.sync.set({
             ip: ipElement.value,
         })
     })
     tokenElement.addEventListener('change', () => {
-        chrome.storage.sync.set({
+        browser.storage.sync.set({
             token: tokenElement.value,
         })
         updateSearch()
     })
     showTipElement.addEventListener('change', () => {
-        chrome.storage.sync.set({
+        browser.storage.sync.set({
             showTip: showTipElement.checked,
         })
     })
     searchDocElement.addEventListener('change', () => {
-        chrome.storage.sync.set({
+        browser.storage.sync.set({
             searchKey: searchDocElement.value,
         })
         updateSearch()
@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const notebook = selectedOption.getAttribute('data-notebook');
         const parentDoc = selectedOption.getAttribute('data-parent');
 
-        chrome.storage.sync.set({
+        browser.storage.sync.set({
             notebook: notebook,
             parentDoc: parentDoc,
             parentHPath: selectedOption.innerText,
@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
     })
     tagsElement.addEventListener('change', () => {
         tagsElement.value = tagsElement.value.replace(/#/g, '')
-        chrome.storage.sync.set({
+        browser.storage.sync.set({
             tags: tagsElement.value,
         })
     })
@@ -85,7 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (saveTemplateBtn) {
         saveTemplateBtn.addEventListener('click', () => {
             const templateText = document.getElementById('templateText').value
-            chrome.storage.sync.set({
+            browser.storage.sync.set({
                 clipTemplate: templateText,
             }, () => {
                 const templateModal = document.getElementById('templateModal')
@@ -128,37 +128,37 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     assetsElement.addEventListener('change', () => {
-        chrome.storage.sync.set({
+        browser.storage.sync.set({
             assets: assetsElement.checked,
         })
     })
     expSpanElement.addEventListener('change', () => {
-        chrome.storage.sync.set({
+        browser.storage.sync.set({
             expSpan: expSpanElement.checked,
         })
     })
     expBoldElement.addEventListener('change', () => {
-        chrome.storage.sync.set({
+        browser.storage.sync.set({
             expBold: expBoldElement.checked,
         })
     })
     expItalicElement.addEventListener('change', () => {
-        chrome.storage.sync.set({
+        browser.storage.sync.set({
             expItalic: expItalicElement.checked,
         })
     })
     expRemoveImgLinkElement.addEventListener('change', () => {
-        chrome.storage.sync.set({
+        browser.storage.sync.set({
             expRemoveImgLink: expRemoveImgLinkElement.checked,
         })
     })
     expListDocTreeElement.addEventListener('change', () => {
-        chrome.storage.sync.set({
+        browser.storage.sync.set({
             expListDocTree: expListDocTreeElement.checked,
         })
     })
     expSvgToImgElement.addEventListener('change', () => {
-        chrome.storage.sync.set({
+        browser.storage.sync.set({
             expSvgToImg: expSvgToImgElement.checked,
         })
     })
@@ -176,7 +176,7 @@ document.addEventListener('DOMContentLoaded', () => {
         siyuanLoadLanguageFile(langCode, (data) => {
             siyuanTranslateDOM(data);
         });
-        chrome.storage.sync.set({
+        browser.storage.sync.set({
             langCode: langCode,
         })
     })
@@ -194,8 +194,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const sendElement = document.getElementById('send')
     sendElement.addEventListener('click', () => {
-        chrome.tabs.query({ currentWindow: true, active: true }, function (tabs) {
-            chrome.scripting.executeScript({
+        browser.tabs.query({ currentWindow: true, active: true }, function (tabs) {
+            browser.scripting.executeScript({
                 target: { tabId: tabs[0].id },
                 func: siyuanGetReadability,
                 args: [tabs[0].id],
@@ -205,7 +205,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     })
 
-    chrome.storage.sync.get({
+    browser.storage.sync.get({
         langCode: siyuanGetDefaultLangCode(),
         ip: 'http://127.0.0.1:6806',
         showTip: true,
@@ -305,14 +305,14 @@ const updateSearch = () => {
             let selected = parentDocElement.querySelector('option[selected]')
             if (!selected) {
                 selected = parentDocElement.selectedOptions[0]
-                chrome.storage.sync.set({
+                browser.storage.sync.set({
                     notebook: selected.getAttribute("data-notebook"),
                     parentDoc: selected.getAttribute("data-parent"),
                     parentHPath: selected.innerText,
                 })
             }
         } else {
-            chrome.storage.sync.set({
+            browser.storage.sync.set({
                 notebook: '',
                 parentDoc: '',
                 parentHPath: ''
@@ -334,7 +334,7 @@ const siyuanGetReadability = async (tabId) => {
     try {
         siyuanShowTipByKey("tip_clipping", 60 * 1000)
     } catch (e) {
-        alert(chrome.i18n.getMessage("tip_first_time"));
+        alert(browser.i18n.getMessage("tip_first_time"));
         window.location.reload();
         return;
     }
@@ -369,7 +369,7 @@ let siyuanLangData = null;
 let siyuanLangCode = null;
 
 function siyuanGetDefaultLangCode() {
-    const langCode = navigator.language || navigator.userLanguage || chrome.runtime.getManifest().default_locale;
+    const langCode = navigator.language || navigator.userLanguage || browser.runtime.getManifest().default_locale;
     const normalizedLangCode = langCode.replace('-', '_');
     return normalizedLangCode;
 }
@@ -384,7 +384,7 @@ async function siyuanMergeTranslations(translations, langCode) {
 
     // 如果当前语言不是英语，则加载英语翻译文件
     if (langCode !== defaultLangCode) {
-        const enTranslationFile = chrome.runtime.getURL(`_locales/${langCode}/messages.json`);
+        const enTranslationFile = browser.runtime.getURL(`_locales/${langCode}/messages.json`);
         try {
             // 异步加载英语翻译文件
             const response = await fetch(enTranslationFile);
@@ -413,7 +413,7 @@ async function siyuanLoadLanguageFile(langCode, callback) {
 
     // 先加载当前语言的翻译文件
     try {
-        const translationFile = chrome.runtime.getURL(`_locales/${langCode}/messages.json`);
+        const translationFile = browser.runtime.getURL(`_locales/${langCode}/messages.json`);
         const response = await fetch(translationFile);
         if (!response.ok) {
             throw new Error('Network response was not ok');

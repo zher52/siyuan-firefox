@@ -1,20 +1,20 @@
-chrome.runtime.onInstalled.addListener(() => {
-    chrome.contextMenus.removeAll(function () {
-        const title = chrome.i18n.getMessage("copy_to_siyuan");
-        chrome.contextMenus.create({
+browser.runtime.onInstalled.addListener(() => {
+    browser.contextMenus.removeAll(function () {
+        const title = browser.i18n.getMessage("copy_to_siyuan");
+        browser.contextMenus.create({
             id: 'copy-to-siyuan',
             title: title,
             contexts: ['selection', 'image'],
         })
     });
     setInterval(() => {
-        chrome.runtime.sendMessage({ type: 'keepAlive' });
+        browser.runtime.sendMessage({ type: 'keepAlive' });
     }, 30000);
 });
 
-chrome.contextMenus.onClicked.addListener(function (info, tab) {
+browser.contextMenus.onClicked.addListener(function (info, tab) {
     if (info.menuItemId === 'copy-to-siyuan') {
-        chrome.tabs.sendMessage(tab.id, {
+        browser.tabs.sendMessage(tab.id, {
             'func': 'copy',
             'tabId': tab.id,
             'srcUrl': info.srcUrl,
@@ -101,7 +101,7 @@ function getSimpleDateTime() {
     return { date, time };
 }
 
-chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
+browser.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
     if (request.func !== 'upload-copy') {
         return
     }
@@ -132,7 +132,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
         body: formData,
     }).then((response) => {
         if (response.redirected) {
-            chrome.tabs.sendMessage(requestData.tabId, {
+            browser.tabs.sendMessage(requestData.tabId, {
                 'func': 'tipKey',
                 'msg': 'tip_token_invalid',
                 'tip': 'tip',
@@ -141,7 +141,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
         return response.json()
     }).then((response) => {
         if (response.code < 0) {
-            chrome.tabs.sendMessage(requestData.tabId, {
+            browser.tabs.sendMessage(requestData.tabId, {
                 'func': 'tip',
                 'msg': response.msg,
                 'tip': requestData.tip,
@@ -149,13 +149,13 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
             return
         }
 
-        chrome.tabs.sendMessage(requestData.tabId, {
+        browser.tabs.sendMessage(requestData.tabId, {
             'func': 'copy2Clipboard',
             'data': response.data.md,
         })
 
         if ('' !== response.msg && requestData.type !== 'article') {
-            chrome.tabs.sendMessage(requestData.tabId, {
+            browser.tabs.sendMessage(requestData.tabId, {
                 'func': 'tip',
                 'msg': response.msg,
                 'tip': requestData.tip,
@@ -165,7 +165,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
         if (requestData.type === 'article') {
             let title = requestData.title ? requestData.title : 'Untitled'
             title = title.replaceAll("/", "")
-            chrome.storage.sync.get({
+            browser.storage.sync.get({
                 clipTemplate: '---\n\n- ${title}${siteName ? " - " + siteName : ""}\n- [${urlDecoded}](${url}) \n- ${excerpt}\n- ${date} ${time}\n\n---\n\n${content}',
             }, (items) => {
                 let excerpt = requestData.excerpt.trim()
@@ -225,7 +225,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
                     return response.json()
                 }).then((response) => {
                     if (0 === response.code) {
-                        chrome.tabs.sendMessage(requestData.tabId, {
+                        browser.tabs.sendMessage(requestData.tabId, {
                             'func': 'tipKey',
                             'msg': "tip_clip_ok",
                             'tip': requestData.tip,
@@ -245,11 +245,11 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
                             })
                         }
 
-                        chrome.tabs.sendMessage(requestData.tabId, {
+                        browser.tabs.sendMessage(requestData.tabId, {
                             'func': 'reload',
                         })
                     } else {
-                        chrome.tabs.sendMessage(requestData.tabId, {
+                        browser.tabs.sendMessage(requestData.tabId, {
                             'func': 'tip',
                             'msg': response.msg,
                             'tip': requestData.tip,
@@ -260,7 +260,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
         }
     }).catch((e) => {
         console.error(e)
-        chrome.tabs.sendMessage(requestData.tabId, {
+        browser.tabs.sendMessage(requestData.tabId, {
             'func': 'tipKey',
             'msg': "tip_siyuan_kernel_unavailable",
             'tip': "tip",
