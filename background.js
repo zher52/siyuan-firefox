@@ -123,6 +123,7 @@ browser.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
     formData.append("parentHPath", requestData.parentHPath)
     formData.append("href", requestData.href)
     formData.append("tags", requestData.tags)
+    formData.append("clipType", requestData.type)
 
     fetch(requestData.api + '/api/extension/copy', {
         method: 'POST',
