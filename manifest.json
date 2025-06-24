@@ -37,7 +37,7 @@
   ],
   "browser_specific_settings": {
     "gecko": {
-      "id": "siyuan-extension@ld246.com"
+      "id": "siyuan-extension@zher52.cn"
     }
   },
   "name": "__MSG_extension_name__",
@@ -46,10 +46,5 @@
     "open_in_tab": true
   },
   "description": "__MSG_extension_description__",
-  "browser_specific_settings": {
-    "gecko": {
-      "id": "siyuan-extension@zher52.cn"
-    }
-  },
   "version": "1.12.5"
 }

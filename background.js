@@ -1,7 +1,7 @@
 browser.runtime.onInstalled.addListener(() => {
-    browser.contextMenus.removeAll(function () {
+    browser.contextMenus?.removeAll(function () {
         const title = browser.i18n.getMessage("copy_to_siyuan");
-        browser.contextMenus.create({
+        browser.contextMenus?.create({
             id: 'copy-to-siyuan',
             title: title,
             contexts: ['selection', 'image'],
@@ -12,7 +12,7 @@ browser.runtime.onInstalled.addListener(() => {
     }, 30000);
 });
 
-browser.contextMenus.onClicked.addListener(function (info, tab) {
+browser.contextMenus?.onClicked.addListener(function (info, tab) {
     if (info.menuItemId === 'copy-to-siyuan') {
         browser.tabs.sendMessage(tab.id, {
             'func': 'copy',
