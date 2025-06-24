@@ -457,6 +457,21 @@
             cursor: pointer;
             color: var(--b3-theme-on-surface);
         }
+
+        /* 媒体查询：手机端样式 */
+        @media (min-resolution: 3dppx) {
+            body {
+                /* 放大页面内容，可根据需要调整缩放比例 */
+                transform: scale(3); 
+                transform-origin: top left;
+                /* 确保页面内容在放大后仍能完整显示 */
+                width: calc(100% / 3);
+                padding: 5px 5px 20px 40px;
+            }
+            button.b3-button{
+                padding: 12px 8px;
+            }
+        }
     </style>
 </head>
 
