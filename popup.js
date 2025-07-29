@@ -134,7 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
         })
     })
     expOpenAfterClipElement.addEventListener('change', () => {
-        chrome.storage.sync.set({
+        browser.storage.sync.set({
             expOpenAfterClip: expOpenAfterClipElement.checked,
         })
     })
