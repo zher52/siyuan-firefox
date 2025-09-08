@@ -21,7 +21,7 @@
     "message": "مسار الحفظ"
   },
   "save_path_placeholder": {
-    "message": "أدخل الكلمة المفتاحية ثم اضغط Enter للبحث"
+    "message": "أدخل كلمة مفتاحية للبحث عن مسار الحفظ"
   },
   "tags": {
     "message": "العلامات"
@@ -103,5 +103,20 @@
   },
   "template_help": {
     "message": "المتغيرات المتاحة:<br>${title} - عنوان الصفحة<br>${url} - رابط الصفحة<br>${siteName} - اسم الموقع<br>${date} - التاريخ الحالي (yyyy-MM-dd)<br>${time} - الوقت الحالي (HH:mm)<br>${tags} - العلامات<br>${excerpt} - مقتطف من الصفحة<br>${content} - محتوى الصفحة"
+  },
+  "template_restore_default": {
+    "message": "استعادة الافتراضي"
+  },
+  "database_label": {
+    "message": "إضافة إلى قاعدة البيانات"
+  },
+  "database_search_placeholder": {
+    "message": "أدخل كلمة مفتاحية للبحث في قاعدة البيانات"
+  },
+  "save_path_none": {
+    "message": "بدون"
+  },
+  "database_none": {
+    "message": "بدون"
   }
 }

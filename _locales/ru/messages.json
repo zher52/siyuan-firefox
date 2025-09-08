@@ -21,7 +21,7 @@
     "message": "Путь сохранения"
   },
   "save_path_placeholder": {
-    "message": "Введите ключевое слово и нажмите Enter для поиска"
+    "message": "Введите ключевое слово для поиска пути сохранения"
   },
   "tags": {
     "message": "Теги"
@@ -103,5 +103,20 @@
   },
   "template_help": {
     "message": "Доступные переменные:<br>${title} - Заголовок страницы<br>${url} - URL страницы<br>${siteName} - Имя сайта<br>${date} - Текущая дата (yyyy-MM-dd)<br>${time} - Текущее время (HH:mm)<br>${tags} - Теги<br>${excerpt} - Извлечение страницы<br>${content} - Содержимое страницы"
+  },
+  "template_restore_default": {
+    "message": "Восстановить по умолчанию"
+  },
+  "database_label": {
+    "message": "Добавить в базу данных"
+  },
+  "database_search_placeholder": {
+    "message": "Введите ключевое слово для поиска в базе данных"
+  },
+  "save_path_none": {
+    "message": "Нет"
+  },
+  "database_none": {
+    "message": "Нет"
   }
 }

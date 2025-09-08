@@ -7,16 +7,24 @@ browser.runtime.onInstalled.addListener(() => {
             contexts: ['selection', 'image'],
         })
     });
-    setInterval(() => {
-        browser.runtime.sendMessage({ type: 'keepAlive' });
-    }, 30000);
 });
+
+function safeTabsSendMessage(tabId, message) {
+    if (!tabId) return;
+    try {
+        chrome.tabs.sendMessage(tabId, message, () => {
+            void chrome.runtime.lastError;
+        });
+    } catch (e) {
+        // ignore
+    }
+}
 
 browser.contextMenus?.onClicked.addListener(function (info, tab) {
     if (info.menuItemId === 'copy-to-siyuan') {
-        browser.tabs.sendMessage(tab.id, {
+        safeTabsSendMessage(tab && tab.id, {
             'func': 'copy',
-            'tabId': tab.id,
+            'tabId': tab && tab.id,
             'srcUrl': info.srcUrl,
         })
     }
@@ -133,7 +141,7 @@ browser.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
         body: formData,
     }).then((response) => {
         if (response.redirected) {
-            browser.tabs.sendMessage(requestData.tabId, {
+            safeTabsSendMessage(requestData.tabId, {
                 'func': 'tipKey',
                 'msg': 'tip_token_invalid',
                 'tip': 'tip',
@@ -142,7 +150,7 @@ browser.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
         return response.json()
     }).then((response) => {
         if (response.code < 0) {
-            browser.tabs.sendMessage(requestData.tabId, {
+            safeTabsSendMessage(requestData.tabId, {
                 'func': 'tip',
                 'msg': response.msg,
                 'tip': requestData.tip,
@@ -150,13 +158,13 @@ browser.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
             return
         }
 
-        browser.tabs.sendMessage(requestData.tabId, {
+        safeTabsSendMessage(requestData.tabId, {
             'func': 'copy2Clipboard',
             'data': response.data.md,
         })
 
         if ('' !== response.msg && requestData.type !== 'article') {
-            browser.tabs.sendMessage(requestData.tabId, {
+            safeTabsSendMessage(requestData.tabId, {
                 'func': 'tip',
                 'msg': response.msg,
                 'tip': requestData.tip,
@@ -166,8 +174,17 @@ browser.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
         if (requestData.type === 'article') {
             let title = requestData.title ? requestData.title : 'Untitled'
             title = title.replaceAll("/", "／")
-            browser.storage.sync.get({
-                clipTemplate: '---\n\n- ${title}${siteName ? " - " + siteName : ""}\n- [${urlDecoded}](${url}) \n- ${excerpt}\n- ${date} ${time}\n\n---\n\n${content}',
+            chrome.storage.sync.get({
+                clipTemplate: '---\n' +
+                    '\n' +
+                    '- ${title}${siteName ? " - " + siteName : ""}\n' +
+                    '- [${urlDecoded}](${url}) \n' +
+                    '${excerpt ? "- " + excerpt : ""}\n' +
+                    '- ${date} ${time}\n' +
+                    '\n' +
+                    '---\n' +
+                    '\n' +
+                    '${content}',
             }, (items) => {
                 let excerpt = requestData.excerpt.trim()
                 if ("" !== excerpt) {
@@ -226,7 +243,37 @@ browser.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
                     return response.json()
                 }).then((response) => {
                     if (0 === response.code) {
-                        browser.tabs.sendMessage(requestData.tabId, {
+                        // 添加到数据库
+                        if (requestData.selectedDatabaseID) {
+                            const docId = response.data;
+
+                            // 先刷新 SQL 数据库
+                            fetch(requestData.api + '/api/sqlite/flushTransaction', {
+                                method: 'POST',
+                                headers: {
+                                    'Authorization': 'Token ' + requestData.token,
+                                },
+                                body: JSON.stringify({}),
+                            }).then(() => {
+                                // 刷新完成后再添加到数据库
+                                const dbInput = {
+                                    avID: requestData.selectedDatabaseID,
+                                    srcs: [{
+                                        id: docId,
+                                        isDetached: false,
+                                    }]
+                                };
+                                fetch(requestData.api + '/api/av/addAttributeViewBlocks', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Authorization': 'Token ' + requestData.token,
+                                    },
+                                    body: JSON.stringify(dbInput),
+                                })
+                            });
+                        }
+
+                        safeTabsSendMessage(requestData.tabId, {
                             'func': 'tipKey',
                             'msg': "tip_clip_ok",
                             'tip': requestData.tip,
@@ -257,11 +304,11 @@ browser.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
                             })
                         }
 
-                        browser.tabs.sendMessage(requestData.tabId, {
+                        safeTabsSendMessage(requestData.tabId, {
                             'func': 'reload',
                         })
                     } else {
-                        browser.tabs.sendMessage(requestData.tabId, {
+                        safeTabsSendMessage(requestData.tabId, {
                             'func': 'tip',
                             'msg': response.msg,
                             'tip': requestData.tip,
@@ -272,7 +319,7 @@ browser.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
         }
     }).catch((e) => {
         console.error(e)
-        browser.tabs.sendMessage(requestData.tabId, {
+        safeTabsSendMessage(requestData.tabId, {
             'func': 'tipKey',
             'msg': "tip_siyuan_kernel_unavailable",
             'tip': "tip",

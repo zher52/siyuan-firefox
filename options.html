@@ -1,5 +1,6 @@
 ﻿<!DOCTYPE html>
 <html>
+
 <head>
     <style>
         :root {
@@ -458,28 +459,98 @@
             color: var(--b3-theme-on-surface);
         }
 
-        /* 媒体查询：手机端样式 */
-        @media (min-resolution: 3dppx) {
-            body {
-                /* 放大页面内容，可根据需要调整缩放比例 */
-                transform: scale(3); 
-                transform-origin: top left;
-                /* 确保页面内容在放大后仍能完整显示 */
-                width: calc(100% / 3);
-                padding: 5px 5px 20px 40px;
-            }
-            button.b3-button{
-                padding: 12px 8px;
-            }
+        /* 自定义下拉菜单样式 */
+        .custom-dropdown {
+            position: relative;
+            width: 100%;
+        }
+
+        .dropdown-display {
+            border: 0;
+            border-radius: var(--b3-border-radius);
+            padding: 4px 26px 4px 8px;
+            box-sizing: border-box;
+            line-height: 20px;
+            color: var(--b3-theme-on-background);
+            transition: box-shadow 120ms 0ms cubic-bezier(0, 0, 0.2, 1), background-color .2s cubic-bezier(0, 0, .2, 1) 0ms;
+            height: 28px;
+            font-size: 14px;
+            box-shadow: inset 0 0 0 .6px var(--b3-theme-on-surface);
+            background: var(--b3-select-background);
+            cursor: pointer;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+
+        .dropdown-display:hover {
+            box-shadow: inset 0 0 0 .6px var(--b3-theme-on-background);
+            background-color: var(--b3-theme-surface);
+        }
+
+        .dropdown-display:focus {
+            outline: none;
+            box-shadow: inset 0 0 0 1px var(--b3-theme-primary), 0 0 0 3px var(--b3-theme-primary-lightest);
+        }
+
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background-color: var(--b3-theme-background);
+            border: 1px solid var(--b3-border-color);
+            border-radius: var(--b3-border-radius);
+            box-shadow: var(--b3-dialog-shadow);
+            z-index: 1000;
+            max-height: 250px;
+            overflow-y: auto;
+        }
+
+        .dropdown-menu.open {
+            display: block;
+        }
+
+        .dropdown-input {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border: none;
+            border-bottom: 1px solid var(--b3-border-color);
+            outline: none;
+            font-size: 14px;
+        }
+
+        .dropdown-options {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            overflow-y: auto;
+        }
+
+        .dropdown-options li {
+            padding: 8px;
+            cursor: pointer;
+            color: var(--b3-theme-on-background);
+        }
+
+        .dropdown-options li:hover {
+            background-color: var(--b3-list-hover);
+        }
+
+        .dropdown-options li.selected {
+            background-color: var(--b3-theme-primary-lightest);
+            color: var(--b3-theme-primary);
         }
     </style>
 </head>
 
 <body>
-    <div style="max-width: 256px">
+    <div style="max-width: 256px;">
         <div id="log" style="color: #d23f31;margin-bottom: 16px"></div>
         <label style="display: flex;align-items: center;padding: 0 8px 16px 0;">
-            <div style="flex: 1" data-i18n="show_tip">Show Tip</div>
+            <div style="flex: 1" data-i18n="show_tip">Show tips</div>
             <input class="b3-switch" id="showTip" checked type="checkbox">
         </label>
         <div class="b3-label" data-i18n="siyuan_url">SiYuan URL</div>
@@ -496,14 +567,28 @@
         </div>
         <div class="fn__hr"></div>
         <div class="b3-label" data-i18n="save_path">Save path</div>
-        <input class="b3-text-field" id="searchDoc" data-i18n="save_path_placeholder"
-            placeholder="Input the keyword then Enter to search" />
-        <div class="fn__hr"></div>
-        <select class="b3-select" id="parentDoc"></select>
+        <div class="custom-dropdown" id="savePathDropdown">
+            <div class="dropdown-display" id="savePathDisplay"></div>
+            <div class="dropdown-menu" id="savePathMenu">
+                <input type="text" class="dropdown-input" id="savePathInput" data-i18n="save_path_placeholder"
+                    placeholder="Enter a keyword to search" />
+                <ul class="dropdown-options" id="savePathOptions"></ul>
+            </div>
+        </div>
         <div class="fn__hr"></div>
         <div class="b3-label" data-i18n="tags">Tags</div>
         <input class="b3-text-field" id="tags" data-i18n="tags_placeholder"
             placeholder="Use commas to separate multiple tags" />
+        <div class="fn__hr"></div>
+        <div class="b3-label" data-i18n="database_label">Database</div>
+        <div class="custom-dropdown" id="databaseDropdown">
+            <div class="dropdown-display" id="databaseDisplay"></div>
+            <div class="dropdown-menu" id="databaseMenu">
+                <input type="text" class="dropdown-input" id="databaseInput" data-i18n="database_search_placeholder"
+                    placeholder="Enter a keyword to search database" />
+                <ul class="dropdown-options" id="databaseOptions"></ul>
+            </div>
+        </div>
         <div class="fn__hr"></div>
         <div class="fn__hr"></div>
         <label style="display: flex;align-items: center;padding: 0 8px 16px 0;">
@@ -530,32 +615,31 @@
                 <input class="b3-switch" id="expItalic" type="checkbox">
             </label>
             <label style="display: flex;align-items: center;padding: 0 8px 16px 0;">
-                <div style="flex: 1" data-i18n="exp_remove_img_link">Remove img link*</div>
+                <div style="flex: 1" data-i18n="exp_remove_img_link">Remove image links*</div>
                 <input class="b3-switch" id="expRemoveImgLink" type="checkbox">
             </label>
             <label style="display: flex;align-items: center;padding: 0 8px 16px 0;">
-                <div style="flex: 1" data-i18n="exp_list_doc_tree">After clipping a web page, display the document tree*
-                </div>
+                <div style="flex: 1" data-i18n="exp_list_doc_tree">Show the document tree after clipping*</div>
                 <input class="b3-switch" id="expListDocTree" type="checkbox">
             </label>
             <label style="display: flex;align-items: center;padding: 0 8px 16px 0;">
-                <div style="flex: 1" data-i18n="exp_open_after_clip">After clipping a web page, open document*</div>
+                <div style="flex: 1" data-i18n="exp_open_after_clip">Open the document after clipping*</div>
                 <input class="b3-switch" id="expOpenAfterClip" type="checkbox">
             </label>
             <label style="display: flex;align-items: center;padding: 0 8px 16px 0;">
-                <div style="flex: 1" data-i18n="exp_svg_to_img">Detect SVG embedded in HTML*</div>
+                <div style="flex: 1" data-i18n="exp_svg_to_img">Detect SVGs embedded in HTML*</div>
                 <input class="b3-switch" id="expSvgToImg" type="checkbox">
             </label>
         </div>
         <label style="display: flex;align-items: center;padding: 0 8px 16px 0;">
-            <div class="b3-label" style="flex: 1" data-i18n="template_config">Clipping template</div>
+            <div class="b3-label" style="flex: 1" data-i18n="template_config">Clipping template settings</div>
             <svg class="config-button" id="templateConfig" viewBox="0 0 24 24">
                 <path
-                        d="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.67 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z" />
+                    d="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.67 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z" />
             </svg>
         </label>
         <label style="display: flex;align-items: center;padding: 0 8px 16px 0;">
-            <div style="flex: 1" data-i18n="language">UI Language</div>
+            <div style="flex: 1" data-i18n="language">Interface language</div>
             <select style="width: auto" class="b3-select" id="language">
                 <option value="ar">العربية</option>
                 <option value="de">Deutsch</option>
@@ -571,10 +655,7 @@
                 <option value="zh_CN">简体中文</option>
             </select>
         </label>
-        <div class="fn__hr"></div>
-        <div class="fn__hr"></div>
-        <div class="fn__hr"></div>
-        <div class="fn__hr"></div>
+
         <button class="b3-button" id="send" data-i18n="send">Send to SiYuan</button>
     </div>
 
@@ -582,12 +663,13 @@
     <div id="templateModal" class="template-modal">
         <div class="template-modal-content">
             <span id="closeTemplate" class="template-close">&times;</span>
-            <div class="template-header" data-i18n="template_config">Clipping Template Configuration</div>
+            <div class="template-header" data-i18n="template_config">Clipping template settings</div>
             <textarea id="templateText" class="template-textarea"></textarea>
             <div id="templateHelp" class="template-help">
                 <!-- 这里将由JS填充模板变量的帮助信息 -->
             </div>
             <div class="template-buttons">
+                <button id="restoreTemplate" class="b3-button" style="background-color: #e0e0e0; color: #333; width: auto;" data-i18n="template_restore_default">Restore default</button>
                 <button id="cancelTemplate" class="b3-button"
                     style="background-color: #e0e0e0; color: #333; width: auto;"
                     data-i18n="template_cancel">Cancel</button>

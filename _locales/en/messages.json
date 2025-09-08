@@ -21,7 +21,7 @@
     "message": "Save path"
   },
   "save_path_placeholder": {
-    "message": "Input the keyword then Enter to search"
+    "message": "Enter a keyword to search for the save path"
   },
   "tags": {
     "message": "Tags"
@@ -103,5 +103,20 @@
   },
   "template_help": {
     "message": "Available variables:<br>${title} - Page title<br>${url} - Page URL<br>${siteName} - Site name<br>${date} - Current date (yyyy-MM-dd)<br>${time} - Current time (HH:mm)<br>${tags} - Tags<br>${excerpt} - Page excerpt<br>${content} - Page content"
+  },
+  "template_restore_default": {
+    "message": "Restore default"
+  },
+  "database_label": {
+    "message": "Add to database"
+  },
+  "database_search_placeholder": {
+    "message": "Enter a keyword to search the database"
+  },
+  "save_path_none": {
+    "message": "None"
+  },
+  "database_none": {
+    "message": "None"
   }
 }

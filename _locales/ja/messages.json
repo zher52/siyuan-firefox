@@ -21,7 +21,7 @@
     "message": "保存先"
   },
   "save_path_placeholder": {
-    "message": "キーワードを入力し、Enterキーを押して検索"
+    "message": "保存先パスを検索するキーワードを入力"
   },
   "tags": {
     "message": "タグ"
@@ -103,5 +103,20 @@
   },
   "template_help": {
     "message": "利用可能な変数：<br>${title} - ページタイトル<br>${url} - ページURL<br>${siteName} - サイト名<br>${date} - 現在の日付 (yyyy-MM-dd)<br>${time} - 現在の時間 (HH:mm)<br>${tags} - タグ<br>${excerpt} - ページの抜粋<br>${content} - ページの内容"
+  },
+  "template_restore_default": {
+    "message": "デフォルトに戻す"
+  },
+  "database_label": {
+    "message": "データベースに追加"
+  },
+  "database_search_placeholder": {
+    "message": "データベースを検索するキーワードを入力"
+  },
+  "save_path_none": {
+    "message": "なし"
+  },
+  "database_none": {
+    "message": "なし"
   }
 }

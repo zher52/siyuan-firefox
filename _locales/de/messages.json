@@ -21,7 +21,7 @@
     "message": "Speicherort"
   },
   "save_path_placeholder": {
-    "message": "Geben Sie das Schlüsselwort ein und drücken Sie Enter, um zu suchen"
+    "message": "Geben Sie ein Stichwort ein, um den Speicherpfad zu suchen"
   },
   "tags": {
     "message": "Tags"
@@ -103,5 +103,20 @@
   },
   "template_help": {
     "message": "Verfügbare Variablen:<br>${title} - Seitentitel<br>${url} - Seiten-URL<br>${siteName} - Website-Name<br>${date} - Aktuelles Datum (yyyy-MM-dd)<br>${time} - Aktuelle Zeit (HH:mm)<br>${tags} - Tags<br>${excerpt} - Seitenauszug<br>${content} - Seiteninhalt"
+  },
+  "template_restore_default": {
+    "message": "Standard wiederherstellen"
+  },
+  "database_label": {
+    "message": "Zur Datenbank hinzufügen"
+  },
+  "database_search_placeholder": {
+    "message": "Geben Sie ein Stichwort ein, um in der Datenbank zu suchen"
+  },
+  "save_path_none": {
+    "message": "Keine"
+  },
+  "database_none": {
+    "message": "Keine"
   }
 }
