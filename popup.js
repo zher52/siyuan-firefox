@@ -83,7 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
     })
 
     savePathInput.addEventListener('input', () => {
-        chrome.storage.sync.set({
+        browser.storage.sync.set({
             searchKey: savePathInput.value,
         })
         updateSearch()
@@ -96,7 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const hPath = e.target.textContent
 
             savePathDisplay.textContent = hPath
-            chrome.storage.sync.set({
+            browser.storage.sync.set({
                 notebook: notebook,
                 parentDoc: parentDoc,
                 parentHPath: hPath,
@@ -117,7 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
     })
 
     databaseInput.addEventListener('input', () => {
-        chrome.storage.sync.set({
+        browser.storage.sync.set({
             searchDatabaseKey: databaseInput.value,
         })
         updateDatabaseSearch()
@@ -129,7 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const dbName = e.target.textContent
             
             databaseDisplay.textContent = dbName
-            chrome.storage.sync.set({
+            browser.storage.sync.set({
                 selectedDatabaseID: dbID,
                 selectedDatabaseName: dbName,
             })
@@ -154,7 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // 打开时预填充当前模板（无则回退默认）
                 const templateTextArea = document.getElementById('templateText')
                 if (templateTextArea) {
-                    chrome.storage.sync.get({
+                    browser.storage.sync.get({
                         clipTemplate: getDefaultTemplate(),
                     }, (t) => {
                         templateTextArea.value = t.clipTemplate || getDefaultTemplate()
@@ -197,7 +197,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const templateTextArea = document.getElementById('templateText')
             const def = getDefaultTemplate()
             if (templateTextArea) templateTextArea.value = def
-            chrome.storage.sync.set({ clipTemplate: def }, () => {
+            browser.storage.sync.set({ clipTemplate: def }, () => {
                 const templateSavedMsg = document.getElementById('templateSavedMsg')
                 if (templateSavedMsg) {
                     templateSavedMsg.style.display = 'block'
@@ -368,7 +368,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (items.selectedDatabaseName) {
             databaseDisplay.textContent = items.selectedDatabaseName
         }else{
-            databaseDisplay.textContent = chrome.i18n.getMessage('database_none') || 'None'
+            databaseDisplay.textContent = browser.i18n.getMessage('database_none') || 'None'
         }
         expOpenAfterClipElement.checked = items.expOpenAfterClip
         expSpanElement.checked = items.expSpan
@@ -391,14 +391,14 @@ const updateSearch = async () => {
 
     // Validate token
     if (!tokenElement.value || tokenElement.value.trim() === '') {
-        const msg = chrome.i18n.getMessage('tip_token_miss') || 'Please configure the API token before clipping content'
+        const msg = browser.i18n.getMessage('tip_token_miss') || 'Please configure the API token before clipping content'
         document.getElementById('log').innerHTML = msg
         return
     }
 
     // Validate token
     if (!tokenElement.value || tokenElement.value.trim() === '') {
-        const msg = chrome.i18n.getMessage('tip_token_miss') || 'Please configure the API token before clipping content'
+        const msg = browser.i18n.getMessage('tip_token_miss') || 'Please configure the API token before clipping content'
         document.getElementById('log').innerHTML = msg
         return
     }
@@ -422,12 +422,12 @@ const updateSearch = async () => {
             })
         })
         if (response.status === 401 || response.status === 403) {
-            const msg = chrome.i18n.getMessage('tip_token_invalid') || 'Invalid API token'
+            const msg = browser.i18n.getMessage('tip_token_invalid') || 'Invalid API token'
             document.getElementById('log').innerHTML = msg
             return
         }
         if (response.status !== 200) {
-            const msg = chrome.i18n.getMessage('tip_siyuan_kernel_unavailable') || 'Please start SiYuan and ensure network connectivity before trying again'
+            const msg = browser.i18n.getMessage('tip_siyuan_kernel_unavailable') || 'Please start SiYuan and ensure network connectivity before trying again'
             document.getElementById('log').innerHTML = msg
             return
         }
@@ -436,7 +436,7 @@ const updateSearch = async () => {
         try {
             data = await response.json()
         } catch (e) {
-            const msg = chrome.i18n.getMessage('tip_siyuan_kernel_unavailable') || 'Please start SiYuan and ensure network connectivity before trying again'
+            const msg = browser.i18n.getMessage('tip_siyuan_kernel_unavailable') || 'Please start SiYuan and ensure network connectivity before trying again'
             document.getElementById('log').innerHTML = msg
             return
         }
@@ -462,7 +462,7 @@ const updateSearch = async () => {
             savePathDisplay.textContent = selectedHPath
         }
     } catch (e) {
-        const msg = chrome.i18n.getMessage('tip_siyuan_kernel_unavailable') || 'Please start SiYuan and ensure network connectivity before trying again'
+        const msg = browser.i18n.getMessage('tip_siyuan_kernel_unavailable') || 'Please start SiYuan and ensure network connectivity before trying again'
         document.getElementById('log').innerHTML = msg
     }
 }
@@ -603,7 +603,7 @@ function siyuanResolveLocale(lang) {
 }
 
 function siyuanGetDefaultLangCode() {
-    const raw = chrome.i18n.getUILanguage() || navigator.language || navigator.userLanguage || 'en';
+    const raw = browser.i18n.getUILanguage() || navigator.language || navigator.userLanguage || 'en';
     return siyuanResolveLocale(raw);
 }
 
@@ -617,7 +617,7 @@ async function siyuanMergeTranslations(translations, langCode) {
 
     // 如果当前语言不是英语，则加载英语翻译文件
     if (langCode !== defaultLangCode) {
-        const enTranslationFile = chrome.runtime.getURL(`_locales/${defaultLangCode}/messages.json`);
+        const enTranslationFile = browser.runtime.getURL(`_locales/${defaultLangCode}/messages.json`);
         try {
             const response = await fetch(enTranslationFile);
             if (!response.ok) {
@@ -645,7 +645,7 @@ async function siyuanLoadLanguageFile(langCode, callback) {
 
     const tryLoad = async (code) => {
         try {
-            const translationFile = chrome.runtime.getURL(`_locales/${code}/messages.json`);
+            const translationFile = browser.runtime.getURL(`_locales/${code}/messages.json`);
             const response = await fetch(translationFile);
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             return await response.json();

@@ -12,8 +12,8 @@ browser.runtime.onInstalled.addListener(() => {
 function safeTabsSendMessage(tabId, message) {
     if (!tabId) return;
     try {
-        chrome.tabs.sendMessage(tabId, message, () => {
-            void chrome.runtime.lastError;
+        browser.tabs.sendMessage(tabId, message, () => {
+            void browser.runtime.lastError;
         });
     } catch (e) {
         // ignore
@@ -174,7 +174,7 @@ browser.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
         if (requestData.type === 'article') {
             let title = requestData.title ? requestData.title : 'Untitled'
             title = title.replaceAll("/", "／")
-            chrome.storage.sync.get({
+            browser.storage.sync.get({
                 clipTemplate: '---\n' +
                     '\n' +
                     '- ${title}${siteName ? " - " + siteName : ""}\n' +
