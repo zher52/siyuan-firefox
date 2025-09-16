@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const showTipElement = document.getElementById('showTip')
     const tagsElement = document.getElementById('tags')
     const assetsElement = document.getElementById('assets')
+    const dirsFirstElement = document.getElementById('dirsFirst')
     const expOpenAfterClipElement = document.getElementById('expOpenAfterClip')
     const expElement = document.getElementById('exp')
     const expGroupElement = document.getElementById('expGroup')
@@ -234,6 +235,11 @@ document.addEventListener('DOMContentLoaded', () => {
             assets: assetsElement.checked,
         })
     })
+    dirsFirstElement.addEventListener('change', () => {
+        browser.storage.sync.set({
+            dirsFirst: dirsFirstElement.checked,
+        })
+    })
     expOpenAfterClipElement.addEventListener('change', () => {
         browser.storage.sync.set({
             expOpenAfterClip: expOpenAfterClipElement.checked,
@@ -326,6 +332,7 @@ document.addEventListener('DOMContentLoaded', () => {
         selectedDatabaseID: '',
         selectedDatabaseName: '',
         assets: true,
+        dirsFirst: true,
         expOpenAfterClip: false,
         expSpan: false,
         expBold: false,
@@ -363,6 +370,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         tagsElement.value = items.tags || ''
         assetsElement.checked = items.assets
+        dirsFirstElement.checked = items.dirsFirst
         databaseInput.value = items.searchDatabaseKey || ''
         databaseDisplay.dataset.selectedId = items.selectedDatabaseID
         if (items.selectedDatabaseName) {
@@ -381,6 +389,54 @@ document.addEventListener('DOMContentLoaded', () => {
         updateDatabaseSearch()
     })
 })
+
+const sortSearchResults = (data, keyword) => {
+    if (!keyword || !data || !Array.isArray(data) || data.length === 0) {
+        return data;
+    }
+    // 未开启目录优先则返回原始数据
+    const dirsFirstElement = document.getElementById('dirsFirst');
+    if(!dirsFirstElement.checked) return data;
+    // 拆分关键词并转小写
+    const keywords = keyword.split(/\s+/).map(k => k.trim().toLowerCase()).filter(Boolean);
+    if (keywords.length === 0) return data;
+    // 获取匹配关键词的目录（算法：截取含有关键词的目录及其前面的路径，一个hpath可能有多个结果）
+    const findMatchedPaths = (hpath, kw) => {
+        let parts = hpath.split('/').filter(Boolean); // 去掉最后一段
+        parts.pop(); // 去掉最后一段
+        const result = [];
+        let current = [];
+        for (const part of parts) {
+            current.push(part);
+            if (part.includes(kw)) result.push(current.join('/'));
+        }
+        return result;
+    }
+    // 计算是否目录（算法：先根据hpath查找到包含关键词的目录paths，然后再遍历data数据中包含这些paths的目录前置）
+    const paths = new Set();
+    for (const item of data) {
+        const hPath = item.hPath.trim();
+        const lowerHPath = hPath.toLowerCase();
+        for (const kw of keywords) {
+            const matchedPaths = findMatchedPaths(lowerHPath, kw);
+            paths.add(...matchedPaths);
+        }
+    }
+    // 前置所有匹配到的目录
+    const front = [];  // 存放 hPath 以 /keyword 结尾的
+    const rest = [];   // 其他保留原序
+    for (const item of data) {
+        const hPath = item.hPath.trim();
+        const lowerHPath = hPath.toLowerCase();
+        if(paths.has(lowerHPath.replace(/^\//, ''))) {
+            front.push(item);
+        } else {
+            rest.push(item);
+        }
+    }
+    // 合并：前置项 + 剩余项，均保持原始顺序
+    return front.concat(rest);
+};
 
 const updateSearch = async () => {
     const ipElement = document.getElementById('ip')
@@ -445,7 +501,9 @@ const updateSearch = async () => {
         }
         let optionsHTML = ''
         let selectedHPath = ''
-        data.data.forEach(doc => {
+
+        const searchList = sortSearchResults(data.data, savePathInput.value || '');
+        searchList.forEach(doc => {
             const parentDoc = String(doc.path).substring(String(doc.path).lastIndexOf('/') + 1).replace('.sy', '')
             let selectedClass = ""
             if (savePathDisplay.dataset.notebook === doc.box && savePathDisplay.dataset.parent === parentDoc &&
@@ -528,7 +586,7 @@ const updateDatabaseSearch = () => {
         }
     }).catch(e => {
         console.error("Database search fetch error:", e)
-        document.getElementById('log').innerHTML = "Database search: Network error or Siyuan not available."
+        document.getElementById('log').innerHTML = "Database search: Network error or SiYuan not available."
     })
 }
 

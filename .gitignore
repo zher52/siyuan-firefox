@@ -1,4 +1,5 @@
 # IDE
 .idea/
+.history/
 web-ext-artifacts/
 .vscode/tasks.json
