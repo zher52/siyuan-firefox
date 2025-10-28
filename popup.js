@@ -197,7 +197,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const templateTextArea = document.getElementById('templateText')
             const def = getDefaultTemplate()
             if (templateTextArea) templateTextArea.value = def
-            chrome.storage.sync.set({clipTemplate: def}, () => {
+            browser.storage.sync.set({clipTemplate: def}, () => {
                 const templateSavedMsg = document.getElementById('templateSavedMsg')
                 if (templateSavedMsg) {
                     templateSavedMsg.style.display = 'block'
@@ -308,8 +308,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const sendElement = document.getElementById('send')
     sendElement.addEventListener('click', () => {
-        chrome.tabs.query({currentWindow: true, active: true}, function (tabs) {
-            chrome.tabs.sendMessage(tabs[0].id, {func: "siyuanGetReadability", tabId: tabs[0].id});
+        browser.tabs.query({currentWindow: true, active: true}, function (tabs) {
+            browser.tabs.sendMessage(tabs[0].id, {func: "siyuanGetReadability", tabId: tabs[0].id});
         });
     })
 
@@ -371,7 +371,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (items.selectedDatabaseName) {
             databaseDisplay.textContent = items.selectedDatabaseName
         } else {
-            databaseDisplay.textContent = chrome.i18n.getMessage('database_none') || 'None'
+            databaseDisplay.textContent = browser.i18n.getMessage('database_none') || 'None'
         }
         expOpenAfterClipElement.checked = items.expOpenAfterClip
         expSpanElement.checked = items.expSpan
@@ -402,12 +402,12 @@ const querySql = async (sql) => {
             body: JSON.stringify({ "stmt": sql || '' })
         })
         if (response.status === 401 || response.status === 403) {
-            const msg = chrome.i18n.getMessage('tip_token_invalid') || 'Invalid API token'
+            const msg = browser.i18n.getMessage('tip_token_invalid') || 'Invalid API token'
             document.getElementById('log').innerHTML = msg
             return []
         }
         if (response.status !== 200) {
-            const msg = chrome.i18n.getMessage('tip_siyuan_kernel_unavailable') || 'Please start SiYuan and ensure network connectivity before trying again'
+            const msg = browser.i18n.getMessage('tip_siyuan_kernel_unavailable') || 'Please start SiYuan and ensure network connectivity before trying again'
             document.getElementById('log').innerHTML = msg
             return []
         }
@@ -416,7 +416,7 @@ const querySql = async (sql) => {
         try {
             data = await response.json()
         } catch (e) {
-            const msg = chrome.i18n.getMessage('tip_siyuan_kernel_unavailable') || 'Please start SiYuan and ensure network connectivity before trying again'
+            const msg = browser.i18n.getMessage('tip_siyuan_kernel_unavailable') || 'Please start SiYuan and ensure network connectivity before trying again'
             document.getElementById('log').innerHTML = msg
             return []
         }
@@ -425,7 +425,7 @@ const querySql = async (sql) => {
         }
         return data.data
     } catch (e) {
-        const msg = chrome.i18n.getMessage('tip_siyuan_kernel_unavailable') || 'Please start SiYuan and ensure network connectivity before trying again'
+        const msg = browser.i18n.getMessage('tip_siyuan_kernel_unavailable') || 'Please start SiYuan and ensure network connectivity before trying again'
         document.getElementById('log').innerHTML = msg
         return [];
     }

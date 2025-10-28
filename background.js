@@ -1,20 +1,20 @@
-chrome.runtime.onInstalled.addListener(() => {
-    chrome.contextMenus.removeAll(function () {
-        chrome.contextMenus.create({
+browser.runtime.onInstalled.addListener(() => {
+    browser.contextMenus.removeAll(function () {
+        browser.contextMenus.create({
             id: 'copy-to-siyuan',
-            title: chrome.i18n.getMessage("copy_to_siyuan"),
+            title: browser.i18n.getMessage("copy_to_siyuan"),
             contexts: ['selection', 'image'],
         });
 
-        chrome.contextMenus.create({
+        browser.contextMenus.create({
             id: 'send',
-            title: chrome.i18n.getMessage("send"),
+            title: browser.i18n.getMessage("send"),
             contexts: ['page'],
         });
     });
 });
 
-chrome.contextMenus.onClicked.addListener(function (info, tab) {
+browser.contextMenus.onClicked.addListener(function (info, tab) {
     if (info.menuItemId === 'copy-to-siyuan') {
         safeTabsSendMessage(tab && tab.id, {
             'func': 'copy',
@@ -298,7 +298,7 @@ browser.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
                                 if (requestData.api.startsWith("http://localhost:") || requestData.api.startsWith("http://127.0.0.1:")) {
                                     documentUrl = `siyuan://blocks/${response.data}`;
                                 }
-                                chrome.tabs.create({url: documentUrl});
+                                browser.tabs.create({url: documentUrl});
                             }
                         });
 

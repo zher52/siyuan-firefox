@@ -780,7 +780,7 @@ const siyuanSendUpload = async (tempElement, tabId, srcUrl, type, article, href)
             tabId,
             selectedDatabaseID: items.selectedDatabaseID,
         };
-        chrome.runtime.sendMessage({func: 'upload-copy', data: msgJSON})
+        browser.runtime.sendMessage({func: 'upload-copy', data: msgJSON})
     })
 }
 
@@ -788,7 +788,7 @@ const siyuanGetReadability = async (tabId) => {
     try {
         siyuanShowTipByKey("tip_clipping", 60 * 1000)
     } catch (e) {
-        alert(chrome.i18n.getMessage("tip_first_time"));
+        alert(browser.i18n.getMessage("tip_first_time"));
         window.location.reload();
         return;
     }
