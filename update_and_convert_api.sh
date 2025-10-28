@@ -10,7 +10,6 @@ YELLOW='\033[0;33m'
 NC='\033[0m' # No Color
 
 # 定义常量
-RESET_COMMIT="babdf0c7de97a040560aeea6e0d7197ad93644f3"
 UPSTREAM_REMOTE="upstream"
 UPSTREAM_BRANCH="main"
 ORIGIN_REMOTE="origin"
@@ -30,19 +29,7 @@ function error() {
     exit 1
 }
 
-# 函数：重置代码到指定提交
-to_reset_code() {
-    info "开始重置代码到提交 $RESET_COMMIT"
-    
-    # 重置本地代码
-    git checkout $ORIGIN_BRANCH || error "切换到 $ORIGIN_BRANCH 分支失败"
-    git reset --hard $RESET_COMMIT || error "重置本地代码失败"
-    
-    # 强制推送重置到远程
-    git push -f $ORIGIN_REMOTE $ORIGIN_BRANCH || error "强制推送重置到远程失败"
-    
-    info "代码已成功重置到提交 $RESET_COMMIT"
-}
+
 
 # 函数：从upstream拉取代码并解决冲突
 to_pull_from_upstream() {
@@ -123,9 +110,7 @@ function main() {
         error "当前目录不是git仓库"
     fi
     
-    # 在测试阶段自动进入测试模式
-    info "自动进入测试模式"
-    to_reset_code
+
     
     # 执行主要任务
     to_pull_from_upstream
