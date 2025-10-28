@@ -128,7 +128,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target.tagName === 'LI') {
             const dbID = e.target.getAttribute('data-id')
             const dbName = e.target.textContent
-            
             databaseDisplay.textContent = dbName
             browser.storage.sync.set({
                 selectedDatabaseID: dbID,
@@ -198,11 +197,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const templateTextArea = document.getElementById('templateText')
             const def = getDefaultTemplate()
             if (templateTextArea) templateTextArea.value = def
-            browser.storage.sync.set({ clipTemplate: def }, () => {
+            chrome.storage.sync.set({clipTemplate: def}, () => {
                 const templateSavedMsg = document.getElementById('templateSavedMsg')
                 if (templateSavedMsg) {
                     templateSavedMsg.style.display = 'block'
-                    setTimeout(() => { templateSavedMsg.style.display = 'none' }, 2000)
+                    setTimeout(() => {
+                        templateSavedMsg.style.display = 'none'
+                    }, 2000)
                 }
             })
         })
@@ -307,14 +308,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const sendElement = document.getElementById('send')
     sendElement.addEventListener('click', () => {
-        browser.tabs.query({ currentWindow: true, active: true }, function (tabs) {
-            browser.scripting.executeScript({
-                target: { tabId: tabs[0].id },
-                func: siyuanGetReadability,
-                args: [tabs[0].id],
-            }, function () {
-                window.close();
-            })
+        chrome.tabs.query({currentWindow: true, active: true}, function (tabs) {
+            chrome.tabs.sendMessage(tabs[0].id, {func: "siyuanGetReadability", tabId: tabs[0].id});
         });
     })
 
@@ -375,8 +370,8 @@ document.addEventListener('DOMContentLoaded', () => {
         databaseDisplay.dataset.selectedId = items.selectedDatabaseID
         if (items.selectedDatabaseName) {
             databaseDisplay.textContent = items.selectedDatabaseName
-        }else{
-            databaseDisplay.textContent = browser.i18n.getMessage('database_none') || 'None'
+        } else {
+            databaseDisplay.textContent = chrome.i18n.getMessage('database_none') || 'None'
         }
         expOpenAfterClipElement.checked = items.expOpenAfterClip
         expSpanElement.checked = items.expSpan
@@ -390,45 +385,94 @@ document.addEventListener('DOMContentLoaded', () => {
     })
 })
 
-const sortSearchResults = (data, keyword) => {
-    if (!keyword || !data || !Array.isArray(data) || data.length === 0) {
+const querySql = async (sql) => {
+    const ipElement = document.getElementById('ip')
+    const tokenElement = document.getElementById('token')
+    let base = (ipElement.value || '').trim()
+    if (!base) base = 'http://127.0.0.1:6806'
+    if (!/^https?:\/\//i.test(base)) base = 'http://' + base
+    while (base.endsWith('/')) base = base.slice(0, -1)
+    try {
+        const response = await fetch(base + '/api/query/sql', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Token ' + tokenElement.value,
+                'Content-Type': 'application/json; charset=UTF-8',
+            },
+            body: JSON.stringify({ "stmt": sql || '' })
+        })
+        if (response.status === 401 || response.status === 403) {
+            const msg = chrome.i18n.getMessage('tip_token_invalid') || 'Invalid API token'
+            document.getElementById('log').innerHTML = msg
+            return []
+        }
+        if (response.status !== 200) {
+            const msg = chrome.i18n.getMessage('tip_siyuan_kernel_unavailable') || 'Please start SiYuan and ensure network connectivity before trying again'
+            document.getElementById('log').innerHTML = msg
+            return []
+        }
+        document.getElementById('log').innerHTML = ''
+        let data
+        try {
+            data = await response.json()
+        } catch (e) {
+            const msg = chrome.i18n.getMessage('tip_siyuan_kernel_unavailable') || 'Please start SiYuan and ensure network connectivity before trying again'
+            document.getElementById('log').innerHTML = msg
+            return []
+        }
+        if (!data || data.code !== 0 || !Array.isArray(data.data)) {
+            return []
+        }
+        return data.data
+    } catch (e) {
+        const msg = chrome.i18n.getMessage('tip_siyuan_kernel_unavailable') || 'Please start SiYuan and ensure network connectivity before trying again'
+        document.getElementById('log').innerHTML = msg
+        return [];
+    }
+}
+
+const getSubDocNumByPaths = async (paths) => {
+    const normalizedPaths = paths.map(p => p.startsWith('/') ? p : '/' + p);
+    const caseFields = normalizedPaths.map(p =>
+        `SUM(CASE WHEN path LIKE '${p.replace(/'/g, "''")}%' THEN 1 ELSE 0 END) AS '${p}.sy'`
+    ).join(', ');
+    const likeConditions = normalizedPaths.map(p =>
+        `path LIKE '${p.replace(/'/g, "''")}%'`
+    ).join(' OR ');
+    const excludeConditions = normalizedPaths.map(p =>
+        `path <> '${p.replace(/'/g, "''")}.sy'`
+    ).join(' AND ');
+    // 拼成单行 SQL，避免模板字符串换行问题
+    const sql = 'SELECT ' + caseFields + ', box FROM blocks WHERE type = \'d\' AND (' + excludeConditions + ') AND (' + likeConditions + ') GROUP BY box;';
+    const res = await querySql(sql);
+    const result = {};
+    for (const row of res) {
+        const { box, ...counts } = row;
+        result[box] = counts;
+    }
+    return result;
+}
+
+// 算法 复杂度O(n)
+// 1 获取sql查询所有path和子文档的映射，格式化成 {"<box>": {"<path>": <num>}} 格式
+// 2 将api结果中的path和映射对比，如果path子文档数>0则是目录，前置
+const sortSearchResults = async (data) => {
+    if (!data || !Array.isArray(data) || data.length === 0) {
         return data;
     }
     // 未开启目录优先则返回原始数据
     const dirsFirstElement = document.getElementById('dirsFirst');
-    if(!dirsFirstElement.checked) return data;
-    // 拆分关键词并转小写
-    const keywords = keyword.split(/\s+/).map(k => k.trim().toLowerCase()).filter(Boolean);
-    if (keywords.length === 0) return data;
-    // 获取匹配关键词的目录（算法：截取含有关键词的目录及其前面的路径，一个hpath可能有多个结果）
-    const findMatchedPaths = (hpath, kw) => {
-        let parts = hpath.split('/').filter(Boolean); // 去掉最后一段
-        parts.pop(); // 去掉最后一段
-        const result = [];
-        let current = [];
-        for (const part of parts) {
-            current.push(part);
-            if (part.includes(kw)) result.push(current.join('/'));
-        }
-        return result;
-    }
-    // 计算是否目录（算法：先根据hpath查找到包含关键词的目录paths，然后再遍历data数据中包含这些paths的目录前置）
-    const paths = new Set();
-    for (const item of data) {
-        const hPath = item.hPath.trim();
-        const lowerHPath = hPath.toLowerCase();
-        for (const kw of keywords) {
-            const matchedPaths = findMatchedPaths(lowerHPath, kw);
-            paths.add(...matchedPaths);
-        }
-    }
+    if (!dirsFirstElement.checked) return data;
+    // 获取所有文档path
+    const paths = data.map(item => item.path.replace('.sy', ''));
+    // 获取path子文档数映射
+    const pathMap = await getSubDocNumByPaths(paths);
     // 前置所有匹配到的目录
-    const front = [];  // 存放 hPath 以 /keyword 结尾的
+    const front = [];  // 存放前置目录
     const rest = [];   // 其他保留原序
     for (const item of data) {
-        const hPath = item.hPath.trim();
-        const lowerHPath = hPath.toLowerCase();
-        if(paths.has(lowerHPath.replace(/^\//, ''))) {
+        const path = item.path.trim();
+        if ((pathMap[item?.box]?.[path]||0) > 0) {
             front.push(item);
         } else {
             rest.push(item);
@@ -436,7 +480,7 @@ const sortSearchResults = (data, keyword) => {
     }
     // 合并：前置项 + 剩余项，均保持原始顺序
     return front.concat(rest);
-};
+}
 
 const updateSearch = async () => {
     const ipElement = document.getElementById('ip')
@@ -502,7 +546,7 @@ const updateSearch = async () => {
         let optionsHTML = ''
         let selectedHPath = ''
 
-        const searchList = sortSearchResults(data.data, savePathInput.value || '');
+        const searchList = await sortSearchResults(data.data, savePathInput.value || '');
         searchList.forEach(doc => {
             const parentDoc = String(doc.path).substring(String(doc.path).lastIndexOf('/') + 1).replace('.sy', '')
             let selectedClass = ""
@@ -601,47 +645,13 @@ const escapeHtml = (unsafe) => {
         .replace(/'/g, "&#039;");
 }
 
-const siyuanGetReadability = async (tabId) => {
-    try {
-        siyuanShowTipByKey("tip_clipping", 60 * 1000)
-    } catch (e) {
-        alert(browser.i18n.getMessage("tip_first_time"));
-        window.location.reload();
-        return;
-    }
-
-    try {
-        // 浏览器剪藏扩展剪藏某些网页代码块丢失注释 https://github.com/siyuan-note/siyuan/issues/5676
-        document.querySelectorAll(".hljs-comment").forEach(item => {
-            item.classList.remove("hljs-comment")
-            item.classList.add("hljs-cmt")
-        })
-
-        // 重构并合并 Readability 前处理 https://github.com/siyuan-note/siyuan/issues/13306
-        const clonedDoc = await siyuanGetCloneNode(document);
-
-        const article = new Readability(clonedDoc, {
-            keepClasses: true,
-            charThreshold: 16,
-            debug: true
-        }).parse()
-        const tempElement = document.createElement('div')
-        tempElement.innerHTML = article.content
-        // console.log(article)
-        siyuanSendUpload(tempElement, tabId, undefined, "article", article, window.location.href)
-    } catch (e) {
-        console.error(e)
-        siyuanShowTip(e.message, 7 * 1000)
-    }
-}
-
 // Add i18n support https://github.com/siyuan-note/siyuan/issues/13559
 let siyuanLangData = null;
 let siyuanLangCode = null;
 
 function siyuanResolveLocale(lang) {
     try {
-        const available = ['ar','de','en','es','fr','he','it','ja','pl','ru','zh_CN','zh_TW'];
+        const available = ['ar', 'de', 'en', 'es', 'fr', 'he', 'it', 'ja', 'pl', 'ru', 'zh_CN', 'zh_TW'];
         if (!lang) return 'en';
         let code = String(lang).replace('-', '_');
         if (code.toLowerCase().startsWith('zh')) {
@@ -689,7 +699,7 @@ async function siyuanMergeTranslations(translations, langCode) {
     }
 
     // 合并当前语言翻译和英语翻译，缺失的字段使用英语翻译
-    const merged = { ...defaultTranslations, ...translations };
+    const merged = {...defaultTranslations, ...translations};
     return merged;
 }
 

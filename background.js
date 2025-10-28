@@ -1,13 +1,33 @@
-browser.runtime.onInstalled.addListener(() => {
-    browser.contextMenus?.removeAll(function () {
-        const title = browser.i18n.getMessage("copy_to_siyuan");
-        browser.contextMenus?.create({
+chrome.runtime.onInstalled.addListener(() => {
+    chrome.contextMenus.removeAll(function () {
+        chrome.contextMenus.create({
             id: 'copy-to-siyuan',
-            title: title,
+            title: chrome.i18n.getMessage("copy_to_siyuan"),
             contexts: ['selection', 'image'],
-        })
+        });
+
+        chrome.contextMenus.create({
+            id: 'send',
+            title: chrome.i18n.getMessage("send"),
+            contexts: ['page'],
+        });
     });
 });
+
+chrome.contextMenus.onClicked.addListener(function (info, tab) {
+    if (info.menuItemId === 'copy-to-siyuan') {
+        safeTabsSendMessage(tab && tab.id, {
+            'func': 'copy',
+            'tabId': tab && tab.id,
+            'srcUrl': info.srcUrl,
+        })
+    } else if (info.menuItemId === 'send') {
+        safeTabsSendMessage(tab && tab.id, {
+            'func': 'siyuanGetReadability',
+            'tabId': tab && tab.id,
+        });
+    }
+})
 
 function safeTabsSendMessage(tabId, message) {
     if (!tabId) return;
@@ -19,16 +39,6 @@ function safeTabsSendMessage(tabId, message) {
         // ignore
     }
 }
-
-browser.contextMenus?.onClicked.addListener(function (info, tab) {
-    if (info.menuItemId === 'copy-to-siyuan') {
-        safeTabsSendMessage(tab && tab.id, {
-            'func': 'copy',
-            'tabId': tab && tab.id,
-            'srcUrl': info.srcUrl,
-        })
-    }
-})
 
 // 添加模板渲染函数
 function renderTemplate(template, data) {
@@ -106,7 +116,7 @@ function getSimpleDateTime() {
     const now = new Date();
     const date = now.toISOString().slice(0, 10);
     const time = now.toTimeString().slice(0, 5);
-    return { date, time };
+    return {date, time};
 }
 
 browser.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
@@ -201,7 +211,7 @@ browser.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
                     console.warn(e)
                 }
 
-                const { date, time } = getSimpleDateTime();
+                const {date, time} = getSimpleDateTime();
                 const templateData = {
                     title: requestData.title || 'Untitled',
                     siteName: requestData.siteName || '',
@@ -284,9 +294,11 @@ browser.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
                             expOpenAfterClip: false,
                         }, (items) => {
                             if (items.expOpenAfterClip && response.data) {
-                                // 使用 SiYuan 协议在桌面应用中打开文档
-                                const documentUrl = `siyuan://blocks/${response.data}`;
-                                browser.tabs.create({ url: documentUrl });
+                                let documentUrl = requestData.api + "?id=" + response.data;
+                                if (requestData.api.startsWith("http://localhost:") || requestData.api.startsWith("http://127.0.0.1:")) {
+                                    documentUrl = `siyuan://blocks/${response.data}`;
+                                }
+                                chrome.tabs.create({url: documentUrl});
                             }
                         });
 
