@@ -11,6 +11,7 @@ on:
 jobs:
   update-and-publish:
     runs-on: ubuntu-latest
+    environment: production  # 指定使用名为production的环境及其secrets
     steps:
       # 检出代码
       - name: Checkout code
