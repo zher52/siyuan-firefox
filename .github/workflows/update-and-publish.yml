@@ -109,6 +109,6 @@ jobs:
         run: |
           echo "将使用Mozilla Add-ons API发布扩展..."
           # 注意：需要设置Mozilla Add-ons API密钥和密码
-          web-ext sign --api-key ${{ secrets.MOZILLA_API_KEY }} --api-secret ${{ secrets.MOZILLA_API_SECRET }}
+          web-ext sign --api-key ${{ secrets.MOZILLA_API_KEY }} --api-secret ${{ secrets.MOZILLA_API_SECRET }} --channel listed
         env:
           NODE_ENV: production
