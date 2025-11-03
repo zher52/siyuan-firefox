@@ -88,32 +88,36 @@ jobs:
           echo "Git状态："
           git status
           
-          # 显示文件差异（调试信息）
-          echo "最近的文件更改："
-          git diff --name-only || true
-          
-          # 添加所有更改
-          git add .
-          
-          # 强制添加manifest.json（确保版本更新被捕获）
-          git add manifest.json
-          
-          # 再次检查git状态（调试信息）
-          echo "添加后Git状态："
-          git status
-          
-          # 检查是否有更改
-          if git diff --staged --quiet; then
-            echo "没有任何更改需要提交。"
-            # 显示暂存区状态（调试信息）
-            git diff --staged || echo "暂存区确实没有更改"
+          # 检查是否有未推送的提交
+          if git log origin/main..HEAD --oneline; then
+            echo "发现有未推送的提交，尝试直接推送..."
+            # 直接推送已存在的提交
+            git push origin main -f
+            echo "已成功推送所有未推送的提交。"
           else
-            echo "发现更改，准备提交..."
-            git commit -m "自动提交：从upstream拉取代码并转换chrome API为browser API"
-            echo "准备推送更改..."
-            git push origin main -f || echo "推送失败，可能需要更高级的权限"
-            echo "更改已成功推送到仓库。"
+            # 检查是否有未提交的更改
+            if [ -n "$(git status --porcelain)" ]; then
+              echo "发现未提交的更改，准备提交..."
+              # 添加所有更改
+              git add .
+              # 强制添加manifest.json（确保版本更新被捕获）
+              git add manifest.json
+              # 提交更改
+              git commit -m "自动提交：从upstream拉取代码并转换chrome API为browser API"
+              echo "准备推送更改..."
+              git push origin main -f
+              echo "更改已成功推送到仓库。"
+            else
+              echo "没有未提交的更改，工作树干净。"
+              # 尝试直接推送（即使显示没有更改，也可能是因为更改已经被提交但未推送）
+              echo "尝试直接推送，确保所有更改都已推送到远程..."
+              git push origin main -f
+            fi
           fi
+          
+          # 显示最终状态（调试信息）
+          echo "最终Git状态："
+          git status
       
       # 安装Firefox扩展打包工具
       - name: Install web-ext
