@@ -43,6 +43,8 @@ jobs:
         run: |
           # 切换到main分支
           git checkout main
+          # 设置默认合并策略
+          git config pull.rebase false
           # 拉取upstream代码
           git pull upstream main -X theirs --no-edit
 
