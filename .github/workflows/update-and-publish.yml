@@ -89,41 +89,7 @@ jobs:
             git commit -m "自动提交：从upstream拉取代码并转换chrome API为browser API"
             git push origin main
           fi
-
-      # 版本变化时创建GitHub Issue作为通知
-      - name: Create GitHub Issue for version update
-        if: steps.version_check.outputs.version_changed == 'true'
-        uses: actions/github-script@v6
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const issueBody = `
-            ## Firefox扩展更新通知
-            
-            **新版本**: ${{ steps.version_check.outputs.new_version }}
-            **更新时间**: ${new Date().toISOString()}
-            **更新内容**: 从upstream仓库拉取最新代码并转换为Firefox兼容格式
-            
-            ### 变更详情
-            - 已从upstream仓库拉取最新代码
-            - 已将Chrome API转换为Firefox API
-            - 已提交并推送到main分支
-            - 已打包并发布到Firefox Add-ons Store
-            
-            此Issue由GitHub Actions自动创建，用于通知您扩展版本已更新。
-            `;
-            
-            // 创建新Issue
-            github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: `Firefox扩展更新通知 - 版本 ${{ steps.version_check.outputs.new_version }}`,
-              body: issueBody
-            });
-            
-            // 可选：如果要避免重复通知，可以检查是否已有相同版本的Issue
-            // 这里简化处理，直接创建新Issue
-
+      
       # 安装Firefox扩展打包工具
       - name: Install web-ext
         if: steps.version_check.outputs.version_changed == 'true'
