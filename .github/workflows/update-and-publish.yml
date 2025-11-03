@@ -19,6 +19,7 @@ jobs:
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: true  # 确保凭证在后续步骤中可用
 
       # 设置Git配置
       - name: Configure Git
@@ -79,15 +80,39 @@ jobs:
       # 提交并推送更改
       - name: Commit and push changes
         run: |
-          # 添加更改
+          # 检查当前工作目录状态（调试信息）
+          echo "当前工作目录内容："
+          ls -la
+          
+          # 显示git状态（调试信息）
+          echo "Git状态："
+          git status
+          
+          # 显示文件差异（调试信息）
+          echo "最近的文件更改："
+          git diff --name-only || true
+          
+          # 添加所有更改
           git add .
+          
+          # 强制添加manifest.json（确保版本更新被捕获）
+          git add manifest.json
+          
+          # 再次检查git状态（调试信息）
+          echo "添加后Git状态："
+          git status
           
           # 检查是否有更改
           if git diff --staged --quiet; then
             echo "没有任何更改需要提交。"
+            # 显示暂存区状态（调试信息）
+            git diff --staged || echo "暂存区确实没有更改"
           else
+            echo "发现更改，准备提交..."
             git commit -m "自动提交：从upstream拉取代码并转换chrome API为browser API"
-            git push origin main
+            echo "准备推送更改..."
+            git push origin main -f || echo "推送失败，可能需要更高级的权限"
+            echo "更改已成功推送到仓库。"
           fi
       
       # 安装Firefox扩展打包工具
