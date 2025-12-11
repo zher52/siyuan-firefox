@@ -28,7 +28,7 @@
   "permissions": [
     "activeTab",
     "scripting",
-    "contextMenus",
+    "contextMenus","menus",
     "clipboardWrite",
     "storage"
   ],

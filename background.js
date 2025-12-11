@@ -1,3 +1,47 @@
+/**
+ * 兼容函数：将 browser.contextMenus 映射到 browser.menus（Firefox Manifest V3）
+ * 调用 browser.contextMenus.create/update/onClicked 等，实际执行 browser.menus 对应方法
+ */
+(function() {
+  // 仅在 Firefox Manifest V3 环境下生效（存在 browser.menus 但无 browser.contextMenus）
+  if (typeof browser !== 'undefined' && browser.menus && !browser.contextMenus) {
+    // 代理核心方法（覆盖所有 menus 常用 API）
+    const menusAPI = browser.menus;
+    browser.contextMenus = {
+      // 基础操作方法
+      create: (options, callback) => menusAPI.create(options, callback),
+      update: (menuId, options, callback) => menusAPI.update(menuId, options, callback),
+      remove: (menuId, callback) => menusAPI.remove(menuId, callback),
+      removeAll: (callback) => menusAPI.removeAll(callback),
+      get: (menuId, callback) => menusAPI.get(menuId, callback),
+      getAll: (callback) => menusAPI.getAll(callback),
+      
+      // 事件监听（保留 addListener/removeListener 语义）
+      onClicked: {
+        addListener: (listener) => menusAPI.onClicked.addListener(listener),
+        removeListener: (listener) => menusAPI.onClicked.removeListener(listener),
+        hasListener: (listener) => menusAPI.onClicked.hasListener(listener)
+      },
+      
+      // 兼容 Chrome 的 refresh 方法（Firefox 无此方法，空实现）
+      refresh: (callback) => callback && callback()
+    };
+
+    // 兼容 Promise 风格调用（Firefox 支持 Promise，Chrome 也兼容）
+    Object.keys(browser.contextMenus).forEach(key => {
+      if (typeof browser.contextMenus[key] === 'function' && key !== 'refresh') {
+        browser.contextMenus[key] = new Proxy(browser.contextMenus[key], {
+          apply(target, thisArg, args) {
+            // 调用原生方法并返回 Promise（对齐 Chrome 行为）
+            const result = Reflect.apply(target, thisArg, args);
+            return result instanceof Promise ? result : Promise.resolve(result);
+          }
+        });
+      }
+    });
+  }
+})();
+
 browser.runtime.onInstalled.addListener(() => {
     browser.contextMenus.removeAll(function () {
         browser.contextMenus.create({
