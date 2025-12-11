@@ -25,6 +25,7 @@
   "background": {
     "scripts": ["background.js"]
   },
+  "data_collection_permissions": [],
   "permissions": [
     "activeTab",
     "scripting",
@@ -38,6 +39,9 @@
   "browser_specific_settings": {
     "gecko": {
       "id": "siyuan-extension@zher52.cn"
+    },
+    "gecko_android": {
+      "strict_min_version": "112.0"
     }
   },
   "name": "__MSG_extension_name__",
