@@ -664,12 +664,24 @@ async function siyuanGetCloneNode(tempDoc) {
     return clonedDoc;
 }
 
-const setMathJaxDataTex = () => {
-    const script = document.createElement('script');
-    script.src = chrome.runtime.getURL('lib/mathjax.js');
-    (document.head || document.documentElement).appendChild(script);
-    script.onload = () => script.remove();
-}
+const setMathJaxDataFormula = () => {
+    return new Promise((resolve) => {
+        const script = document.createElement('script');
+        script.src = chrome.runtime.getURL('lib/mathjax.js');
+        (document.head || document.documentElement).appendChild(script);
+
+        const cleanUp = () => {
+            try { script.remove(); } catch (e) {}
+            resolve();
+        };
+
+        script.onload = cleanUp;
+        script.onerror = () => {
+            console.warn('MathJax load failed');
+            cleanUp();
+        };
+    });
+};
 
 const siyuanSendUpload = async (tempElement, tabId, srcUrl, type, article, href) => {
     browser.storage.sync.get({
@@ -825,8 +837,8 @@ const siyuanGetReadability = async (tabId) => {
     }
 
     try {
-        // 处理 MathJax 公式，添加 data-tex 属性 https://github.com/siyuan-note/siyuan/issues/13543
-        setMathJaxDataTex();
+        // 处理 MathJax 公式 https://github.com/siyuan-note/siyuan/issues/13543
+        await setMathJaxDataFormula();
 
         // 浏览器剪藏扩展剪藏某些网页代码块丢失注释 https://github.com/siyuan-note/siyuan/issues/5676
         document.querySelectorAll(".hljs-comment").forEach(item => {
