@@ -31,8 +31,25 @@
     "scripting",
     "contextMenus","menus",
     "clipboardWrite",
-    "storage"
+    "storage",
+    "commands"
   ],
+  "commands": {
+    "copy-to-siyuan": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+C",
+        "mac": "Command+Shift+C"
+      },
+      "description": "Copy selected text to SiYuan"
+    },
+    "send-to-siyuan": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+S",
+        "mac": "Command+Shift+S"
+      },
+      "description": "Clip entire page to SiYuan"
+    }
+  },
   "web_accessible_resources": [
     {
       "resources": [
@@ -60,5 +77,5 @@
     "open_in_tab": true
   },
   "description": "__MSG_extension_description__",
-  "version": "1.14.3"
+  "version": "1.14.4"
 }

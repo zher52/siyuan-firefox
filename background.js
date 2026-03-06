@@ -73,6 +73,26 @@ browser.contextMenus.onClicked.addListener(function (info, tab) {
     }
 })
 
+chrome.commands.onCommand.addListener(function (command) {
+    chrome.tabs.query({active: true, currentWindow: true}, function (tabs) {
+        const tab = tabs[0]
+        if (!tab) return
+
+        if (command === 'copy-to-siyuan') {
+            safeTabsSendMessage(tab.id, {
+                'func': 'copy',
+                'tabId': tab.id,
+                'srcUrl': undefined,
+            })
+        } else if (command === 'send-to-siyuan') {
+            safeTabsSendMessage(tab.id, {
+                'func': 'siyuanGetReadability',
+                'tabId': tab.id,
+            })
+        }
+    })
+})
+
 function safeTabsSendMessage(tabId, message) {
     if (!tabId) return;
     try {
