@@ -62,27 +62,6 @@ function safeTabsSendMessage(tabId, message) {
     }
 }
 
-function clipDiagnosticLog(diagnosticID, message, data = {}) {
-    console.info(`[SiYuan clipping][${diagnosticID || "unknown"}] ${message}`, data);
-}
-
-function getClipAssetLabel(key) {
-    try {
-        const src = unescape(key);
-        const url = new URL(src);
-        if (url.protocol === "data:" || url.protocol === "blob:") {
-            return {host: url.protocol, name: "inline"};
-        }
-        const pathSegments = url.pathname.split("/");
-        return {
-            host: url.hostname || url.protocol,
-            name: pathSegments[pathSegments.length - 1] || "",
-        };
-    } catch (e) {
-        return {host: "invalid", name: ""};
-    }
-}
-
 /** @param {string} excerpt */
 function formatClipExcerpt(excerpt) {
     let text = (excerpt || "").trim();
@@ -320,7 +299,6 @@ async function addClippedDocToDatabase(apiBase, token, docId, databaseID) {
 }
 
 async function handleArticleClip(requestData, apiBase, copyData, fetchFileErr) {
-    const diagnosticID = requestData.diagnosticID || "unknown";
     let title = requestData.title ? requestData.title : "Untitled";
     title = title.replace(/[\\/]/g, "／");
 
@@ -376,10 +354,6 @@ async function handleArticleClip(requestData, apiBase, copyData, fetchFileErr) {
     }
 
     const docId = createResponse.data;
-    clipDiagnosticLog(diagnosticID, "created clipped document", {
-        fetchFileErr,
-        assetsEnabled: requestData.assets,
-    });
 
     if (requestData.selectedDatabaseID) {
         const dbOk = await addClippedDocToDatabase(apiBase, requestData.token, docId, requestData.selectedDatabaseID);
@@ -406,7 +380,6 @@ async function handleArticleClip(requestData, apiBase, copyData, fetchFileErr) {
 
     if (fetchFileErr) {
         // 可能因为跨域问题导致下载图片失败，这里调用内核接口 `网络图片转换为本地图片` https://github.com/siyuan-note/siyuan/issues/7224
-        clipDiagnosticLog(diagnosticID, "starting kernel network image fallback");
         void fetch(apiBase + "/api/format/netImg2LocalAssets", {
             method: "POST",
             headers: { Authorization: "Token " + requestData.token },
@@ -414,23 +387,6 @@ async function handleArticleClip(requestData, apiBase, copyData, fetchFileErr) {
                 id: docId,
                 url: requestData.href, // 改进浏览器剪藏扩展转换本地图片成功率 https://github.com/siyuan-note/siyuan/issues/7464
             }),
-        }).then(async (response) => {
-            let resultCode;
-            try {
-                const result = await response.json();
-                resultCode = result.code;
-            } catch (e) {
-                resultCode = "invalid-json";
-            }
-            clipDiagnosticLog(diagnosticID, "completed kernel network image fallback", {
-                httpStatus: response.status,
-                ok: response.ok,
-                resultCode,
-            });
-        }).catch((e) => {
-            console.warn(`[SiYuan clipping][${diagnosticID}] kernel network image fallback failed`, {
-                error: e && e.name ? e.name : "unknown",
-            });
         });
     }
 
@@ -440,50 +396,25 @@ async function handleArticleClip(requestData, apiBase, copyData, fetchFileErr) {
 async function handleUploadCopy(requestData) {
     const apiBase = siyuanNormalizeBase(requestData.api);
     const fetchFileErr = requestData.fetchFileErr;
-    const diagnosticID = requestData.diagnosticID || "unknown";
 
     const formData = new FormData();
     formData.append("dom", requestData.dom);
-    let multipartBytes = 0;
     for (const key of Object.keys(requestData.files)) {
         const base64Response = await fetch(requestData.files[key].data);
-        const blob = await base64Response.blob();
-        multipartBytes += blob.size;
-        formData.append(key, blob);
-        clipDiagnosticLog(diagnosticID, "added image to multipart request", {
-            asset: getClipAssetLabel(key),
-            contentType: blob.type,
-            blobBytes: blob.size,
-        });
+        formData.append(key, await base64Response.blob());
     }
-    formData.append("diagnosticID", diagnosticID);
     formData.append("notebook", requestData.notebook);
     formData.append("href", requestData.href);
     formData.append("tags", requestData.tags);
     formData.append("clipType", requestData.type);
     // 透传“下载资源”开关，链滴/流云整页剪藏时由内核按此开关决定是否下载网络资源到本地
     formData.append("assets", requestData.assets);
-    clipDiagnosticLog(diagnosticID, "sending clipping multipart request", {
-        files: Object.keys(requestData.files).length,
-        multipartBytes,
-        fetchFileErr,
-        assetsEnabled: requestData.assets,
-        clipType: requestData.type,
-    });
-    console.info(`[SiYuan clipping][${diagnosticID}] transferred content diagnostics ${JSON.stringify({
-        imageDiagnostics: requestData.imageDiagnostics,
-        contentDiagnostics: requestData.contentDiagnostics,
-    })}`);
 
     try {
         const copyHttpResponse = await fetch(apiBase + "/api/extension/copy", {
             method: "POST",
             headers: { Authorization: "Token " + requestData.token },
             body: formData,
-        });
-        clipDiagnosticLog(diagnosticID, "received clipping conversion response", {
-            httpStatus: copyHttpResponse.status,
-            redirected: copyHttpResponse.redirected,
         });
 
         if (copyHttpResponse.redirected) {
@@ -496,14 +427,6 @@ async function handleUploadCopy(requestData) {
         }
 
         const copyResult = await copyHttpResponse.json();
-        const markdown = copyResult.data && copyResult.data.md ? copyResult.data.md : "";
-        clipDiagnosticLog(diagnosticID, "parsed clipping conversion response", {
-            resultCode: copyResult.code,
-            markdownBytes: markdown.length,
-            markdownImages: (markdown.match(/!\[[^\]]*]\(/g) || []).length,
-            localAssetRefs: (markdown.match(/\]\(assets\//g) || []).length,
-            networkAssetRefs: (markdown.match(/\]\(https?:\/\//g) || []).length,
-        });
         if (copyResult.code < 0) {
             safeTabsSendMessage(requestData.tabId, {
                 func: "tip",
@@ -530,9 +453,7 @@ async function handleUploadCopy(requestData) {
             await handleArticleClip(requestData, apiBase, copyResult.data, fetchFileErr);
         }
     } catch (e) {
-        console.error(`[SiYuan clipping][${diagnosticID}] clipping upload failed`, {
-            error: e && e.name ? e.name : "unknown",
-        });
+        console.error(e);
         safeTabsSendMessage(requestData.tabId, {
             func: "tipKey",
             msg: "tip_siyuan_kernel_unavailable",
