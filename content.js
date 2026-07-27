@@ -205,6 +205,225 @@ const siyuanConvertBlobToBase64 = (blob) =>
         reader.readAsDataURL(blob);
     });
 
+const siyuanNewClipDiagnosticID = () => {
+    return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+};
+
+const siyuanGetClipAssetLabel = (src) => {
+    try {
+        const url = new URL(src, window.location.href);
+        if (url.protocol === "data:" || url.protocol === "blob:") {
+            return {host: url.protocol, name: "inline"};
+        }
+        const pathSegments = url.pathname.split("/");
+        return {
+            host: url.hostname || url.protocol,
+            name: pathSegments[pathSegments.length - 1] || "",
+        };
+    } catch (e) {
+        return {host: "invalid", name: ""};
+    }
+};
+
+const siyuanClipDiagnosticLog = (diagnosticID, message, data = {}) => {
+    console.info(`[SiYuan clipping][${diagnosticID}] ${message}`, data);
+};
+
+const SIYUAN_CLIP_IMAGE_INDEX_ATTR = "data-siyuan-clip-image-index";
+
+const siyuanIsYuquePage = () => {
+    return window.location.hostname === "yuque.com" || window.location.hostname.endsWith(".yuque.com");
+};
+
+const siyuanGetImageSource = (image) => {
+    const source = image.getAttribute("src") ||
+        image.currentSrc ||
+        image.getAttribute("data-src") ||
+        image.getAttribute("data-original") ||
+        image.getAttribute("data-origin-src") ||
+        image.getAttribute("data-lazy-src");
+    if (!source) {
+        return "";
+    }
+    try {
+        return new URL(source, document.baseURI).href;
+    } catch (e) {
+        return source;
+    }
+};
+
+const siyuanIsYuqueCardReady = (card) => {
+    if (card.getAttribute("data-card-name") === "codeblock") {
+        return !!card.querySelector(".cm-content");
+    }
+    const image = card.querySelector("img");
+    return !!image && "" !== siyuanGetImageSource(image);
+};
+
+const siyuanWaitForYuqueCard = (card, timeout = 2000) => {
+    if (siyuanIsYuqueCardReady(card)) {
+        return Promise.resolve(true);
+    }
+    return new Promise((resolve) => {
+        let completed = false;
+        const complete = (ready) => {
+            if (completed) {
+                return;
+            }
+            completed = true;
+            observer.disconnect();
+            clearTimeout(timer);
+            resolve(ready);
+        };
+        const observer = new MutationObserver(() => {
+            if (siyuanIsYuqueCardReady(card)) {
+                complete(true);
+            }
+        });
+        const timer = setTimeout(() => complete(siyuanIsYuqueCardReady(card)), timeout);
+        observer.observe(card, {
+            attributes: true,
+            attributeFilter: ["src", "data-src", "data-original", "data-origin-src", "data-lazy-src"],
+            childList: true,
+            subtree: true,
+        });
+        card.scrollIntoView({behavior: "auto", block: "center", inline: "nearest"});
+    });
+};
+
+const siyuanPrepareYuqueCards = async (doc) => {
+    if (!siyuanIsYuquePage()) {
+        return {cards: 0, initiallyReady: 0, rendered: 0, unresolved: 0};
+    }
+
+    const cards = Array.from(doc.querySelectorAll(
+        'ne-card[data-card-name="image"], ne-card[data-card-name="codeblock"]'
+    ));
+    const scrollX = window.scrollX;
+    const scrollY = window.scrollY;
+    let initiallyReady = 0;
+    let rendered = 0;
+
+    try {
+        for (const card of cards) {
+            if (siyuanIsYuqueCardReady(card)) {
+                initiallyReady++;
+                continue;
+            }
+            if (await siyuanWaitForYuqueCard(card)) {
+                rendered++;
+            }
+        }
+    } finally {
+        window.scrollTo(scrollX, scrollY);
+        await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    }
+
+    return {
+        cards: cards.length,
+        initiallyReady,
+        rendered,
+        unresolved: cards.filter((card) => !siyuanIsYuqueCardReady(card)).length,
+    };
+};
+
+const siyuanPrepareYuqueImages = (sourceDoc, clonedDoc) => {
+    if (!siyuanIsYuquePage()) {
+        return [];
+    }
+
+    const selector = ".yuque-doc-content img";
+    const sourceImages = Array.from(sourceDoc.querySelectorAll(selector));
+    const clonedImages = Array.from(clonedDoc.querySelectorAll(selector));
+    return sourceImages.map((sourceImage, index) => {
+        const src = siyuanGetImageSource(sourceImage);
+        const clonedImage = clonedImages[index];
+        if (clonedImage) {
+            clonedImage.setAttribute(SIYUAN_CLIP_IMAGE_INDEX_ATTR, index.toString());
+            if (src) {
+                clonedImage.setAttribute("src", src);
+            }
+        }
+        return {
+            src,
+            alt: sourceImage.getAttribute("alt") || "",
+        };
+    });
+};
+
+const siyuanNormalizeYuqueCodeBlocks = (doc) => {
+    if (!siyuanIsYuquePage()) {
+        return {normalized: 0, unresolved: 0};
+    }
+
+    let normalized = 0;
+    let unresolved = 0;
+    doc.querySelectorAll('ne-card[data-card-name="codeblock"]').forEach((card) => {
+        const content = card.querySelector(".cm-content");
+        if (!content) {
+            unresolved++;
+            return;
+        }
+
+        const lines = Array.from(content.querySelectorAll(".cm-line"));
+        const codeText = 0 < lines.length
+            ? lines.map((line) => line.textContent).join("\n")
+            : content.textContent;
+        const pre = doc.createElement("pre");
+        const code = doc.createElement("code");
+        code.textContent = codeText;
+        pre.appendChild(code);
+        card.replaceWith(pre);
+        normalized++;
+    });
+    return {normalized, unresolved};
+};
+
+const siyuanRestoreYuqueImages = (root, imageSources) => {
+    if (!siyuanIsYuquePage() || 0 === imageSources.length) {
+        return 0;
+    }
+
+    const sourcesByAlt = new Map();
+    imageSources.forEach((source, index) => {
+        if (!source.src || !source.alt) {
+            return;
+        }
+        const sources = sourcesByAlt.get(source.alt) || [];
+        sources.push({index, src: source.src});
+        sourcesByAlt.set(source.alt, sources);
+    });
+
+    const usedSourceIndexes = new Set();
+    let restored = 0;
+    root.querySelectorAll("img").forEach((image) => {
+        if (siyuanGetImageSource(image)) {
+            image.removeAttribute(SIYUAN_CLIP_IMAGE_INDEX_ATTR);
+            return;
+        }
+
+        const sourceIndex = Number.parseInt(image.getAttribute(SIYUAN_CLIP_IMAGE_INDEX_ATTR), 10);
+        let source = Number.isInteger(sourceIndex) ? imageSources[sourceIndex] : undefined;
+        if (!source?.src) {
+            const altSources = sourcesByAlt.get(image.getAttribute("alt") || "") || [];
+            const altSource = altSources.find((item) => !usedSourceIndexes.has(item.index));
+            if (altSource) {
+                source = altSource;
+                usedSourceIndexes.add(altSource.index);
+            }
+        } else {
+            usedSourceIndexes.add(sourceIndex);
+        }
+
+        if (source?.src) {
+            image.setAttribute("src", source.src);
+            restored++;
+        }
+        image.removeAttribute(SIYUAN_CLIP_IMAGE_INDEX_ATTR);
+    });
+    return restored;
+};
+
 // 网页换行用 span 样式 word-break 的特殊处理 https://github.com/siyuan-note/siyuan/issues/13195
 // 递归查找父元素直到找到 pre、code、span、math 或 math相关标签
 function isIgnoredElement(element) {
@@ -844,14 +1063,17 @@ const siyuanEnsureClipReady = async () => {
     return items;
 };
 
-const siyuanSendUpload = async (tempElement, tabId, srcUrl, type, article, href, clipItems) => {
+const siyuanSendUpload = async (tempElement, tabId, srcUrl, type, article, href, clipItems, diagnosticID) => {
     const items = clipItems || (await siyuanGetClipSettings());
+    const clipDiagnosticID = diagnosticID || siyuanNewClipDiagnosticID();
 
     if (type !== "article") {
         void siyuanShowTipByKey("tip_clipping");
     }
 
     let srcList = [];
+    let missingSrcCount = 0;
+    let skippedEmojiCount = 0;
     if (srcUrl) {
         srcList.push(srcUrl);
     }
@@ -859,12 +1081,14 @@ const siyuanSendUpload = async (tempElement, tabId, srcUrl, type, article, href,
     images.forEach((item) => {
         let src = item.getAttribute("src");
         if (!src) {
+            missingSrcCount++;
             return;
         }
 
         const itemClassName = String(item.className || "");
         if (itemClassName.includes("emoji") && "" !== item.getAttribute("alt")) {
             // 图片 Emoji 直接使用 alt https://github.com/siyuan-note/siyuan/issues/13342
+            skippedEmojiCount++;
             return;
         }
 
@@ -895,6 +1119,16 @@ const siyuanSendUpload = async (tempElement, tabId, srcUrl, type, article, href,
 
     let files = {};
     srcList = [...new Set(srcList)];
+    const imageDiagnostics = {
+        assetsEnabled: items.assets,
+        domImages: images.length,
+        missingSrc: missingSrcCount,
+        skippedEmoji: skippedEmojiCount,
+        uniqueCandidates: srcList.length,
+        candidates: srcList.slice(0, 50).map(siyuanGetClipAssetLabel),
+        candidateLogTruncated: 50 < srcList.length,
+    };
+    siyuanClipDiagnosticLog(clipDiagnosticID, "collected image candidates", imageDiagnostics);
 
     if (!items.assets) {
         // 不剪藏资源文件 https://github.com/siyuan-note/siyuan/issues/12583
@@ -928,12 +1162,19 @@ const siyuanSendUpload = async (tempElement, tabId, srcUrl, type, article, href,
                 },
             });
         } catch (e) {
-            console.warn("fetch [" + src + "] failed", e);
+            console.warn(`[SiYuan clipping][${clipDiagnosticID}] image fetch failed`, {
+                asset: siyuanGetClipAssetLabel(src),
+                error: e && e.name ? e.name : "unknown",
+            });
             fetchFileErr = true;
             continue;
         }
         if (!response.ok) {
-            console.warn("fetch [" + src + "] HTTP " + response.status);
+            console.warn(`[SiYuan clipping][${clipDiagnosticID}] image fetch returned HTTP error`, {
+                asset: siyuanGetClipAssetLabel(src),
+                status: response.status,
+                contentType: response.headers.get("content-type") || "",
+            });
             fetchFileErr = true;
             continue;
         }
@@ -943,16 +1184,31 @@ const siyuanSendUpload = async (tempElement, tabId, srcUrl, type, article, href,
             type: image.type,
             data: data,
         };
+        siyuanClipDiagnosticLog(clipDiagnosticID, "downloaded image candidate", {
+            asset: siyuanGetClipAssetLabel(src),
+            status: response.status,
+            contentType: image.type,
+            blobBytes: image.size,
+        });
 
         filesSize += data.length;
         if (1000 * 1000 * 60 < filesSize) {
             // 下载图片总大小超过 60MB 时走内核剪藏
             fetchFileErr = true;
             files = {};
-            console.warn("Total image size exceeds 60MB, fallback to kernel netImg2LocalAssets");
+            console.warn(`[SiYuan clipping][${clipDiagnosticID}] total encoded image size exceeds 60MB`, {
+                encodedBytes: filesSize,
+            });
             break;
         }
     }
+
+    siyuanClipDiagnosticLog(clipDiagnosticID, "prepared clipping upload", {
+        downloadCandidates: srcList.length,
+        preparedFiles: Object.keys(files).length,
+        encodedBytes: filesSize,
+        fetchFileErr,
+    });
 
     let title = article && article.title ? article.title : document.title || "";
     let siteName = article && article.siteName ? article.siteName : "";
@@ -960,6 +1216,12 @@ const siyuanSendUpload = async (tempElement, tabId, srcUrl, type, article, href,
     let url = href || window.location.href;
 
     const msgJSON = {
+        diagnosticID: clipDiagnosticID,
+        imageDiagnostics,
+        contentDiagnostics: {
+            codeEditors: tempElement.querySelectorAll(".cm-content").length,
+            codeBlocks: tempElement.querySelectorAll("pre, .ne-codeblock").length,
+        },
         fetchFileErr,
         files: files,
         dom: tempElement.innerHTML,
@@ -1031,6 +1293,7 @@ const siyuanGetReadability = async (tabId) => {
 
     void siyuanShowTipByKey("tip_clipping");
 
+    const diagnosticID = siyuanNewClipDiagnosticID();
     try {
         // 处理 MathJax 公式 https://github.com/siyuan-note/siyuan/issues/13543
         await setMathJaxDataFormula();
@@ -1042,7 +1305,18 @@ const siyuanGetReadability = async (tabId) => {
         });
 
         // 重构并合并 Readability 前处理 https://github.com/siyuan-note/siyuan/issues/13306
+        const yuqueCardDiagnostics = await siyuanPrepareYuqueCards(document);
+        const sourceCodeCards = Array.from(document.querySelectorAll('ne-card[data-card-name="codeblock"]'));
+        siyuanClipDiagnosticLog(diagnosticID, "starting Readability extraction", {
+            pageHost: window.location.hostname,
+            codeCards: sourceCodeCards.length,
+            renderedCodeCards: sourceCodeCards.filter((card) => card.querySelector(".cm-content")).length,
+            domImages: document.querySelectorAll("img").length,
+            yuqueCards: yuqueCardDiagnostics,
+        });
         const clonedDoc = await siyuanGetCloneNode(document);
+        const yuqueImageSources = siyuanPrepareYuqueImages(document, clonedDoc);
+        const yuqueCodeBlockDiagnostics = siyuanNormalizeYuqueCodeBlocks(clonedDoc);
 
         const article = new Readability(clonedDoc, {
             keepClasses: true,
@@ -1050,20 +1324,30 @@ const siyuanGetReadability = async (tabId) => {
             debug: true,
         }).parse();
         if (!article?.content) {
+            siyuanClipDiagnosticLog(diagnosticID, "Readability extraction returned no content");
             void siyuanShowTipByKey("tip_readability_failed", 7000);
             return;
         }
         const tempElement = document.createElement("div");
         tempElement.innerHTML = article.content;
+        const restoredYuqueImages = siyuanRestoreYuqueImages(tempElement, yuqueImageSources);
         simplifyNestedTags(tempElement, "DIV");
         simplifyNestedTags(tempElement, "SPAN");
         simplifyNestedTags(tempElement, "SECTION");
         simplifyNestedTags(tempElement, "ARTICLE");
         simplifyNestedTags(tempElement, "P");
+        siyuanClipDiagnosticLog(diagnosticID, "completed Readability extraction", {
+            extractedImages: tempElement.querySelectorAll("img").length,
+            extractedCodeEditors: tempElement.querySelectorAll(".cm-content").length,
+            extractedCodeBlocks: tempElement.querySelectorAll("pre, .ne-codeblock").length,
+            extractedTextLength: tempElement.textContent.length,
+            restoredYuqueImages,
+            yuqueCodeBlocks: yuqueCodeBlockDiagnostics,
+        });
         // console.log(article)
-        siyuanSendUpload(tempElement, tabId, undefined, "article", article, window.location.href, clipSettings);
+        siyuanSendUpload(tempElement, tabId, undefined, "article", article, window.location.href, clipSettings, diagnosticID);
     } catch (e) {
-        console.error(e);
+        console.error(`[SiYuan clipping][${diagnosticID}] clipping failed`, e);
         siyuanShowTip(e.message, undefined, 7 * 1000);
     }
 };
