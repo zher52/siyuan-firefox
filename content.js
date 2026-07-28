@@ -205,6 +205,201 @@ const siyuanConvertBlobToBase64 = (blob) =>
         reader.readAsDataURL(blob);
     });
 
+const SIYUAN_CLIP_IMAGE_INDEX_ATTR = "data-siyuan-clip-image-index";
+
+const siyuanIsYuquePage = () => {
+    return window.location.hostname === "yuque.com" || window.location.hostname.endsWith(".yuque.com");
+};
+
+const siyuanGetImageSource = (image) => {
+    const source = image.getAttribute("src") ||
+        image.currentSrc ||
+        image.getAttribute("data-src") ||
+        image.getAttribute("data-original") ||
+        image.getAttribute("data-origin-src") ||
+        image.getAttribute("data-lazy-src");
+    if (!source) {
+        return "";
+    }
+    try {
+        return new URL(source, document.baseURI).href;
+    } catch (e) {
+        return source;
+    }
+};
+
+const siyuanIsYuqueCardReady = (card) => {
+    if (card.getAttribute("data-card-name") === "codeblock") {
+        return !!card.querySelector(".cm-content");
+    }
+    const image = card.querySelector("img");
+    return !!image && "" !== siyuanGetImageSource(image);
+};
+
+const siyuanWaitForYuqueCard = (card, timeout = 2000) => {
+    if (siyuanIsYuqueCardReady(card)) {
+        return Promise.resolve(true);
+    }
+    return new Promise((resolve) => {
+        let completed = false;
+        const complete = (ready) => {
+            if (completed) {
+                return;
+            }
+            completed = true;
+            observer.disconnect();
+            clearTimeout(timer);
+            resolve(ready);
+        };
+        const observer = new MutationObserver(() => {
+            if (siyuanIsYuqueCardReady(card)) {
+                complete(true);
+            }
+        });
+        const timer = setTimeout(() => complete(siyuanIsYuqueCardReady(card)), timeout);
+        observer.observe(card, {
+            attributes: true,
+            attributeFilter: ["src", "data-src", "data-original", "data-origin-src", "data-lazy-src"],
+            childList: true,
+            subtree: true,
+        });
+        card.scrollIntoView({behavior: "auto", block: "center", inline: "nearest"});
+    });
+};
+
+const siyuanPrepareYuqueCards = async (doc) => {
+    if (!siyuanIsYuquePage()) {
+        return {cards: 0, initiallyReady: 0, rendered: 0, unresolved: 0};
+    }
+
+    const cards = Array.from(doc.querySelectorAll(
+        'ne-card[data-card-name="image"], ne-card[data-card-name="codeblock"]'
+    ));
+    const scrollX = window.scrollX;
+    const scrollY = window.scrollY;
+    let initiallyReady = 0;
+    let rendered = 0;
+
+    try {
+        for (const card of cards) {
+            if (siyuanIsYuqueCardReady(card)) {
+                initiallyReady++;
+                continue;
+            }
+            if (await siyuanWaitForYuqueCard(card)) {
+                rendered++;
+            }
+        }
+    } finally {
+        window.scrollTo(scrollX, scrollY);
+        await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    }
+
+    return {
+        cards: cards.length,
+        initiallyReady,
+        rendered,
+        unresolved: cards.filter((card) => !siyuanIsYuqueCardReady(card)).length,
+    };
+};
+
+const siyuanPrepareYuqueImages = (sourceDoc, clonedDoc) => {
+    if (!siyuanIsYuquePage()) {
+        return [];
+    }
+
+    const selector = ".yuque-doc-content img";
+    const sourceImages = Array.from(sourceDoc.querySelectorAll(selector));
+    const clonedImages = Array.from(clonedDoc.querySelectorAll(selector));
+    return sourceImages.map((sourceImage, index) => {
+        const src = siyuanGetImageSource(sourceImage);
+        const clonedImage = clonedImages[index];
+        if (clonedImage) {
+            clonedImage.setAttribute(SIYUAN_CLIP_IMAGE_INDEX_ATTR, index.toString());
+            if (src) {
+                clonedImage.setAttribute("src", src);
+            }
+        }
+        return {
+            src,
+            alt: sourceImage.getAttribute("alt") || "",
+        };
+    });
+};
+
+const siyuanNormalizeYuqueCodeBlocks = (doc) => {
+    if (!siyuanIsYuquePage()) {
+        return {normalized: 0, unresolved: 0};
+    }
+
+    let normalized = 0;
+    let unresolved = 0;
+    doc.querySelectorAll('ne-card[data-card-name="codeblock"]').forEach((card) => {
+        const content = card.querySelector(".cm-content");
+        if (!content) {
+            unresolved++;
+            return;
+        }
+
+        const lines = Array.from(content.querySelectorAll(".cm-line"));
+        const codeText = 0 < lines.length
+            ? lines.map((line) => line.textContent).join("\n")
+            : content.textContent;
+        const pre = doc.createElement("pre");
+        const code = doc.createElement("code");
+        code.textContent = codeText;
+        pre.appendChild(code);
+        card.replaceWith(pre);
+        normalized++;
+    });
+    return {normalized, unresolved};
+};
+
+const siyuanRestoreYuqueImages = (root, imageSources) => {
+    if (!siyuanIsYuquePage() || 0 === imageSources.length) {
+        return 0;
+    }
+
+    const sourcesByAlt = new Map();
+    imageSources.forEach((source, index) => {
+        if (!source.src || !source.alt) {
+            return;
+        }
+        const sources = sourcesByAlt.get(source.alt) || [];
+        sources.push({index, src: source.src});
+        sourcesByAlt.set(source.alt, sources);
+    });
+
+    const usedSourceIndexes = new Set();
+    let restored = 0;
+    root.querySelectorAll("img").forEach((image) => {
+        if (siyuanGetImageSource(image)) {
+            image.removeAttribute(SIYUAN_CLIP_IMAGE_INDEX_ATTR);
+            return;
+        }
+
+        const sourceIndex = Number.parseInt(image.getAttribute(SIYUAN_CLIP_IMAGE_INDEX_ATTR), 10);
+        let source = Number.isInteger(sourceIndex) ? imageSources[sourceIndex] : undefined;
+        if (!source?.src) {
+            const altSources = sourcesByAlt.get(image.getAttribute("alt") || "") || [];
+            const altSource = altSources.find((item) => !usedSourceIndexes.has(item.index));
+            if (altSource) {
+                source = altSource;
+                usedSourceIndexes.add(altSource.index);
+            }
+        } else {
+            usedSourceIndexes.add(sourceIndex);
+        }
+
+        if (source?.src) {
+            image.setAttribute("src", source.src);
+            restored++;
+        }
+        image.removeAttribute(SIYUAN_CLIP_IMAGE_INDEX_ATTR);
+    });
+    return restored;
+};
+
 // 网页换行用 span 样式 word-break 的特殊处理 https://github.com/siyuan-note/siyuan/issues/13195
 // 递归查找父元素直到找到 pre、code、span、math 或 math相关标签
 function isIgnoredElement(element) {
@@ -1042,7 +1237,10 @@ const siyuanGetReadability = async (tabId) => {
         });
 
         // 重构并合并 Readability 前处理 https://github.com/siyuan-note/siyuan/issues/13306
+        await siyuanPrepareYuqueCards(document);
         const clonedDoc = await siyuanGetCloneNode(document);
+        const yuqueImageSources = siyuanPrepareYuqueImages(document, clonedDoc);
+        siyuanNormalizeYuqueCodeBlocks(clonedDoc);
 
         const article = new Readability(clonedDoc, {
             keepClasses: true,
@@ -1055,6 +1253,7 @@ const siyuanGetReadability = async (tabId) => {
         }
         const tempElement = document.createElement("div");
         tempElement.innerHTML = article.content;
+        siyuanRestoreYuqueImages(tempElement, yuqueImageSources);
         simplifyNestedTags(tempElement, "DIV");
         simplifyNestedTags(tempElement, "SPAN");
         simplifyNestedTags(tempElement, "SECTION");
