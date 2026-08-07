@@ -954,8 +954,36 @@ function fixInvalidNesting(doc) {
         "article",
     ];
 
+    const ownerDocument = doc.ownerDocument || doc;
     const inlineSelector = inlineTags.join(",");
     const blockSelector = blockTags.join(",");
+
+    // 标题元素只能包含行内内容，先将第一个块级后代及其后续内容移到标题外
+    const invalidHeadings = Array.from(doc.querySelectorAll("h1, h2, h3, h4, h5, h6"))
+        .filter((heading) => heading.querySelector(blockSelector));
+    invalidHeadings.forEach((heading) => {
+        const firstBlock = heading.querySelector(blockSelector);
+        if (!firstBlock || !heading.parentNode) {
+            return;
+        }
+
+        const range = ownerDocument.createRange();
+        range.selectNodeContents(heading);
+        range.setEndBefore(firstBlock);
+
+        const normalizedHeading = heading.cloneNode(false);
+        normalizedHeading.appendChild(range.extractContents());
+
+        const trailingContent = ownerDocument.createDocumentFragment();
+        while (heading.firstChild) {
+            trailingContent.appendChild(heading.firstChild);
+        }
+
+        const parent = heading.parentNode;
+        parent.insertBefore(normalizedHeading, heading);
+        parent.insertBefore(trailingContent, heading);
+        heading.remove();
+    });
 
     // 1. 获取所有可能是行内的元素
     const allInlines = Array.from(doc.querySelectorAll(inlineSelector));
@@ -968,7 +996,7 @@ function fixInvalidNesting(doc) {
         // 再次检查 oldEl 是否还在 DOM 树中（防止在之前的循环中已被父级替换）
         if (!oldEl.parentNode) return;
 
-        const newDiv = doc.createElement("div");
+        const newDiv = ownerDocument.createElement("div");
 
         // 复制属性
         for (const attr of oldEl.attributes) {
