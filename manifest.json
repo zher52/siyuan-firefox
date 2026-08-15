@@ -32,7 +32,11 @@
     }
   ],
   "background": {
-    "scripts": ["background.js"]
+    "scripts": [
+      "lib/siyuan-storage-defaults.js",
+      "lib/siyuan-api.js",
+      "background.js"
+    ]
   },
   "data_collection_permissions": [],
   "permissions": [
@@ -79,7 +83,7 @@
     }
   },
   "name": "__MSG_extension_name__",
-  "options_ui":{
+  "options_ui": {
     "page": "options.html",
     "open_in_tab": true
   },

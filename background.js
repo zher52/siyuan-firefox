@@ -1,4 +1,3 @@
-importScripts("lib/siyuan-storage-defaults.js", "lib/siyuan-api.js");
 
 chrome.runtime.onInstalled.addListener(() => {
     chrome.contextMenus.removeAll(function () {

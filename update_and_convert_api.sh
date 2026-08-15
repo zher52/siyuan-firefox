@@ -84,6 +84,17 @@ to_convert_chrome_to_browser() {
     info "chrome API转换为browser API完成"
 }
 
+# 函数：将 service worker 后台脚本适配为 Firefox 的 event page
+to_adapt_background() {
+    info "适配后台脚本（importScripts -> manifest background.scripts）"
+
+    if [ ! -x "./adapt_background_for_firefox.sh" ]; then
+        chmod +x ./adapt_background_for_firefox.sh
+    fi
+
+    ./adapt_background_for_firefox.sh || error "适配后台脚本失败"
+}
+
 # 函数：提交代码到origin
 to_commit_and_push() {
     info "提交代码到 $ORIGIN_REMOTE/$ORIGIN_BRANCH"
@@ -115,6 +126,7 @@ function main() {
     # 执行主要任务
     to_pull_from_upstream
     to_convert_chrome_to_browser
+    to_adapt_background
     to_commit_and_push
     
     info "所有任务已成功完成！"
