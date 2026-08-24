@@ -59,6 +59,64 @@ jobs:
             sed -i 's/chrome\./browser\./g' "$file"
           done
 
+      # Firefox MV3 不支持 importScripts，将 importScripts 声明迁移至 manifest.json
+      - name: Migrate importScripts to manifest.json
+        run: |
+          python3 -c "
+          import json, re, sys
+
+          # 读取 background.js，提取 importScripts 调用中的脚本路径
+          with open('background.js', 'r') as f:
+              bg_content = f.read()
+
+          match = re.search(r'importScripts\(([^)]+)\)', bg_content)
+          if not match:
+              print('background.js 中未找到 importScripts，跳过')
+              sys.exit(0)
+
+          # 解析脚本路径列表
+          raw = match.group(1)
+          scripts = [s.strip().strip('\"').strip(\"'\") for s in raw.split(',')]
+          scripts = [s for s in scripts if s]
+
+          if not scripts:
+              print('importScripts 中未找到有效脚本路径，跳过')
+              sys.exit(0)
+
+          print('发现 importScripts 调用，迁移以下脚本到 manifest.json:')
+          for s in scripts:
+              print(f'  {s}')
+
+          # 删除 background.js 中的 importScripts 行
+          new_bg = re.sub(r'^importScripts\([^)]+\);\s*\n?', '', bg_content, count=1, flags=re.MULTILINE)
+          with open('background.js', 'w') as f:
+              f.write(new_bg)
+
+          # 修改 manifest.json，在 background.scripts 中 background.js 之前插入脚本
+          with open('manifest.json', 'r') as f:
+              manifest = json.load(f)
+
+          bg_scripts = manifest.get('background', {}).get('scripts', [])
+          if 'background.js' in bg_scripts:
+              idx = bg_scripts.index('background.js')
+              for script in reversed(scripts):
+                  if script not in bg_scripts:
+                      bg_scripts.insert(idx, script)
+              manifest['background']['scripts'] = bg_scripts
+          else:
+              for script in scripts:
+                  if script not in bg_scripts:
+                      bg_scripts.insert(0, script)
+              manifest['background']['scripts'] = bg_scripts
+
+          with open('manifest.json', 'w') as f:
+              json.dump(manifest, f, indent=2, ensure_ascii=False)
+              f.write('\n')
+
+          print('迁移完成，manifest.json background.scripts 已更新')
+          print('当前 background.scripts:', manifest['background']['scripts'])
+          "
+
       # 检查版本号是否变化
       - name: Check for version change
         id: version_check
@@ -125,19 +183,78 @@ jobs:
         run: |
           npm install --global web-ext
 
-      # 打包Firefox扩展
-      - name: Build Firefox extension
+      # 打包并发布Firefox扩展（遇到版本冲突时自动递增小版本重试）
+      - name: Build and Publish Firefox extension
         if: steps.version_check.outputs.version_changed == 'true'
         run: |
-          web-ext build --no-input
-          echo "打包完成，扩展文件位于web-ext-artifacts/目录"
+          MAX_RETRY=10
+          ATTEMPT=0
 
-      # 发布到Firefox Add-ons Store
-      - name: Publish to Firefox Add-ons
-        if: steps.version_check.outputs.version_changed == 'true'
-        run: |
-          echo "将使用Mozilla Add-ons API发布扩展..."
-          # 注意：需要设置Mozilla Add-ons API密钥和密码
-          web-ext sign --api-key ${{ secrets.MOZILLA_API_KEY }} --api-secret ${{ secrets.MOZILLA_API_SECRET }} --channel listed
+          # 读取基础版本号（X.Y.Z 格式）
+          BASE_VERSION=$(python3 -c "
+          import json
+          with open('manifest.json') as f:
+              print(json.load(f)['version'])
+          ")
+
+          echo "基础版本号: $BASE_VERSION"
+
+          while [ $ATTEMPT -lt $MAX_RETRY ]; do
+            if [ $ATTEMPT -eq 0 ]; then
+              CURRENT_VERSION="$BASE_VERSION"
+            else
+              CURRENT_VERSION="${BASE_VERSION}.${ATTEMPT}"
+              # 更新 manifest.json 中的版本号
+              python3 -c "
+          import json
+          with open('manifest.json', 'r') as f:
+              manifest = json.load(f)
+          manifest['version'] = '$CURRENT_VERSION'
+          with open('manifest.json', 'w') as f:
+              json.dump(manifest, f, indent=2, ensure_ascii=False)
+              f.write('\n')
+          "
+              echo "版本冲突，递增版本号至: $CURRENT_VERSION"
+            fi
+
+            ATTEMPT=$((ATTEMPT + 1))
+            echo "第 $ATTEMPT 次尝试，版本: $CURRENT_VERSION"
+
+            # 清理之前的构建产物
+            rm -rf web-ext-artifacts
+
+            # 打包
+            web-ext build --no-input
+            echo "打包完成"
+
+            # 发布
+            set +e
+            SIGN_OUTPUT=$(web-ext sign \
+              --api-key ${{ secrets.MOZILLA_API_KEY }} \
+              --api-secret ${{ secrets.MOZILLA_API_SECRET }} \
+              --channel listed 2>&1)
+            SIGN_EXIT=$?
+            set -e
+
+            if [ $SIGN_EXIT -eq 0 ]; then
+              echo "发布成功！版本: $CURRENT_VERSION"
+              break
+            fi
+
+            # 检查是否为版本冲突错误
+            if echo "$SIGN_OUTPUT" | grep -q "uploaded before and deleted\|Version.*was uploaded before"; then
+              echo "版本 $CURRENT_VERSION 已发布过，将递增版本号重试..."
+              if [ $ATTEMPT -ge $MAX_RETRY ]; then
+                echo "已达到最大重试次数 ($MAX_RETRY)，发布失败"
+                exit 1
+              fi
+              continue
+            fi
+
+            # 非版本冲突错误，直接失败
+            echo "$SIGN_OUTPUT"
+            echo "发布失败（非版本冲突），退出"
+            exit $SIGN_EXIT
+          done
         env:
           NODE_ENV: production
