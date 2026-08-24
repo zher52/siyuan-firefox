@@ -146,6 +146,9 @@
   "database_label": {
     "message": "Добавить в базу данных"
   },
+  "database_template_label": {
+    "message": "Шаблон элемента базы данных"
+  },
   "database_search_placeholder": {
     "message": "Введите ключевое слово для поиска в базе данных"
   },

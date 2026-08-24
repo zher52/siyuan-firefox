@@ -146,6 +146,9 @@
   "database_label": {
     "message": "إضافة إلى قاعدة البيانات"
   },
+  "database_template_label": {
+    "message": "قالب عنصر قاعدة البيانات"
+  },
   "database_search_placeholder": {
     "message": "أدخل كلمة مفتاحية للبحث في قاعدة البيانات"
   },

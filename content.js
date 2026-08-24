@@ -1053,6 +1053,9 @@ const siyuanEnsureClipReady = async () => {
                 token: items.token,
                 notebook: items.notebook,
                 savePathTemplate: items.savePathTemplate,
+                databaseID: items.selectedDatabaseID,
+                databaseBlockID: items.selectedDatabaseBlockID,
+                databaseTemplateID: items.selectedDatabaseTemplateID,
             },
         });
     } catch (e) {
@@ -1203,6 +1206,9 @@ const siyuanSendUpload = async (tempElement, tabId, srcUrl, type, article, href,
         type,
         tabId,
         selectedDatabaseID: items.selectedDatabaseID,
+        selectedDatabaseBlockID: items.selectedDatabaseBlockID,
+        selectedDatabaseViewID: items.selectedDatabaseViewID,
+        selectedDatabaseTemplateID: items.selectedDatabaseTemplateID,
     };
     if (srcList.length > 0) {
         void siyuanShowTipByKey("tip_clipping");

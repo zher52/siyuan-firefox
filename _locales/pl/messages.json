@@ -146,6 +146,9 @@
   "database_label": {
     "message": "Dodaj do bazy danych"
   },
+  "database_template_label": {
+    "message": "Szablon elementu bazy danych"
+  },
   "database_search_placeholder": {
     "message": "Wpisz słowo kluczowe, aby wyszukać w bazie danych"
   },

@@ -146,6 +146,9 @@
   "database_label": {
     "message": "데이터베이스에 추가"
   },
+  "database_template_label": {
+    "message": "데이터베이스 항목 템플릿"
+  },
   "database_search_placeholder": {
     "message": "데이터베이스를 검색하려면 키워드를 입력하세요"
   },

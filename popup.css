@@ -379,6 +379,18 @@ html[lang="uk"] .popup {
     color: var(--color-primary-hover);
 }
 
+.popup__mode-action:disabled {
+    cursor: not-allowed;
+}
+
+.popup__path-controls--disabled {
+    opacity: 0.5;
+}
+
+.popup__path-controls--disabled .popup__dropdown-trigger {
+    cursor: not-allowed;
+}
+
 .popup__save-path-mode {
     padding-top: var(--space-1);
 }

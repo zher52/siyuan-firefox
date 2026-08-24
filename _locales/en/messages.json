@@ -146,6 +146,9 @@
   "database_label": {
     "message": "Add to database"
   },
+  "database_template_label": {
+    "message": "Database item template"
+  },
   "database_search_placeholder": {
     "message": "Enter a keyword to search the database"
   },

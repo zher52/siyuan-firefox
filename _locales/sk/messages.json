@@ -146,6 +146,9 @@
   "database_label": {
     "message": "Pridať do databázy"
   },
+  "database_template_label": {
+    "message": "Šablóna položky databázy"
+  },
   "database_search_placeholder": {
     "message": "Zadajte kľúčové slovo na vyhľadanie databázy"
   },

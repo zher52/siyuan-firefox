@@ -146,6 +146,9 @@
   "database_label": {
     "message": "Tambahkan ke database"
   },
+  "database_template_label": {
+    "message": "Templat item basis data"
+  },
   "database_search_placeholder": {
     "message": "Masukkan kata kunci untuk mencari database"
   },

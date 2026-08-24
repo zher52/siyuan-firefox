@@ -146,6 +146,9 @@
   "database_label": {
     "message": "Ajouter à la base de données"
   },
+  "database_template_label": {
+    "message": "Modèle d’élément de base de données"
+  },
   "database_search_placeholder": {
     "message": "Entrez un mot-clé pour rechercher dans la base de données"
   },

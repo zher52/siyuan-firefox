@@ -146,6 +146,9 @@
   "database_label": {
     "message": "添加到数据库"
   },
+  "database_template_label": {
+    "message": "数据库条目模板"
+  },
   "database_search_placeholder": {
     "message": "输入关键字搜索数据库"
   },

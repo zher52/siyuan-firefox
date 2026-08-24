@@ -146,6 +146,9 @@
   "database_label": {
     "message": "Veritabanına ekle"
   },
+  "database_template_label": {
+    "message": "Veritabanı öğesi şablonu"
+  },
   "database_search_placeholder": {
     "message": "Veritabanını aramak için bir anahtar kelime girin"
   },

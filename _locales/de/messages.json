@@ -146,6 +146,9 @@
   "database_label": {
     "message": "Zur Datenbank hinzufügen"
   },
+  "database_template_label": {
+    "message": "Datenbank-Eintragsvorlage"
+  },
   "database_search_placeholder": {
     "message": "Geben Sie ein Stichwort ein, um in der Datenbank zu suchen"
   },

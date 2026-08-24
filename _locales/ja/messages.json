@@ -146,6 +146,9 @@
   "database_label": {
     "message": "データベースに追加"
   },
+  "database_template_label": {
+    "message": "データベース項目テンプレート"
+  },
   "database_search_placeholder": {
     "message": "データベースを検索するキーワードを入力"
   },

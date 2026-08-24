@@ -146,6 +146,9 @@
   "database_label": {
     "message": "添加到資料庫"
   },
+  "database_template_label": {
+    "message": "資料庫項目範本"
+  },
   "database_search_placeholder": {
     "message": "輸入關鍵字搜尋資料庫"
   },

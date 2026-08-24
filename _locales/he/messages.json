@@ -146,6 +146,9 @@
   "database_label": {
     "message": "הוסף למסד נתונים"
   },
+  "database_template_label": {
+    "message": "תבנית פריט מסד נתונים"
+  },
   "database_search_placeholder": {
     "message": "הזן מילת מפתח לחיפוש במסד הנתונים"
   },

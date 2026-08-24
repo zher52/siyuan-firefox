@@ -210,8 +210,15 @@ function buildClipMarkdown(requestData, contentMd, clipTemplate) {
 }
 
 /** 在 background 中检测内核连通性，避免 content script 访问 localhost 触发 LNA 权限弹窗 */
-async function siyuanCheckKernel({ ip, token, notebook, savePathTemplate }) {
-    const prereq = siyuanValidateClipPrereqs({ token, notebook, savePathTemplate });
+async function siyuanCheckKernel({ ip, token, notebook, savePathTemplate, databaseID, databaseBlockID, databaseTemplateID }) {
+    const prereq = siyuanValidateClipPrereqs({
+        token,
+        notebook,
+        savePathTemplate,
+        databaseID,
+        databaseBlockID,
+        databaseTemplateID,
+    });
     if (!prereq.ok) {
         return prereq;
     }
@@ -226,7 +233,7 @@ async function siyuanCheckKernel({ ip, token, notebook, savePathTemplate }) {
         return result;
     }
     const notebooks = result.data?.data?.notebooks;
-    if (!Array.isArray(notebooks) || !notebooks.some((item) => item.id === notebook && !item.closed)) {
+    if (!databaseTemplateID && (!Array.isArray(notebooks) || !notebooks.some((item) => item.id === notebook && !item.closed))) {
         return { ok: false, error: "tip_save_path_miss" };
     }
     return { ok: true };
@@ -298,42 +305,69 @@ async function addClippedDocToDatabase(apiBase, token, docId, databaseID) {
     return true;
 }
 
-async function handleArticleClip(requestData, apiBase, copyData, fetchFileErr) {
-    let title = requestData.title ? requestData.title : "Untitled";
-    title = title.replace(/[\\/]/g, "／");
-
-    const renderedPath = await resolveClipDocumentPath(requestData, title);
-    if (!renderedPath.ok) {
-        safeTabsSendMessage(requestData.tabId, renderedPath.error ? {
-            func: "tipKey",
-            msg: renderedPath.error,
-            tip: requestData.tip,
-        } : {
-            func: "tip",
-            msg: renderedPath.message,
-            tip: requestData.tip,
-        });
-        return;
-    }
-
-    const { clipTemplate } = await storageSyncGet({ clipTemplate: SIYUAN_DEFAULT_CLIP_TEMPLATE });
-    const markdown = buildClipMarkdown(requestData, copyData.md, clipTemplate);
-
-    const createResult = await siyuanKernelFetch({
+async function createClippedDocWithDatabaseTemplate(requestData, title, markdown, withMath) {
+    return siyuanKernelFetch({
         ip: requestData.api,
         token: requestData.token,
-        path: "/api/filetree/createDocWithMd",
+        path: "/api/av/createAttributeViewItemWithMarkdown",
         body: {
-            notebook: requestData.notebook,
-            parentID: requestData.parentDoc,
+            avID: requestData.selectedDatabaseID,
+            blockID: requestData.selectedDatabaseBlockID,
+            viewID: requestData.selectedDatabaseViewID,
+            templateID: requestData.selectedDatabaseTemplateID,
+            title,
+            markdown,
             tags: requestData.tags,
-            path: renderedPath.path,
-            markdown: markdown,
-            withMath: copyData.withMath,
+            withMath,
             clippingHref: requestData.href,
             listDocTree: requestData.listDocTree,
         },
     });
+}
+
+async function handleArticleClip(requestData, apiBase, copyData, fetchFileErr) {
+    let title = requestData.title ? requestData.title : "Untitled";
+    title = title.replace(/[\\/]/g, "／");
+
+    const { clipTemplate } = await storageSyncGet({ clipTemplate: SIYUAN_DEFAULT_CLIP_TEMPLATE });
+    const markdown = buildClipMarkdown(requestData, copyData.md, clipTemplate);
+
+    let createResult;
+    let templateCreated = false;
+    if (requestData.selectedDatabaseTemplateID) {
+        createResult = await createClippedDocWithDatabaseTemplate(requestData, title, markdown, copyData.withMath);
+        templateCreated = true;
+    } else {
+        const renderedPath = await resolveClipDocumentPath(requestData, title);
+        if (!renderedPath.ok) {
+            safeTabsSendMessage(requestData.tabId, renderedPath.error ? {
+                func: "tipKey",
+                msg: renderedPath.error,
+                tip: requestData.tip,
+            } : {
+                func: "tip",
+                msg: renderedPath.message,
+                tip: requestData.tip,
+            });
+            return;
+        }
+
+        createResult = await siyuanKernelFetch({
+            ip: requestData.api,
+            token: requestData.token,
+            path: "/api/filetree/createDocWithMd",
+            body: {
+                notebook: requestData.notebook,
+                parentID: requestData.parentDoc,
+                tags: requestData.tags,
+                path: renderedPath.path,
+                markdown: markdown,
+                withMath: copyData.withMath,
+                clippingHref: requestData.href,
+                listDocTree: requestData.listDocTree,
+            },
+        });
+    }
     if (!createResult.ok) {
         safeTabsSendMessage(requestData.tabId, {
             func: "tipKey",
@@ -345,17 +379,29 @@ async function handleArticleClip(requestData, apiBase, copyData, fetchFileErr) {
 
     const createResponse = createResult.data;
     if (createResponse.code !== 0) {
-        safeTabsSendMessage(requestData.tabId, {
+        safeTabsSendMessage(requestData.tabId, createResponse.msg ? {
             func: "tip",
             msg: createResponse.msg,
+            tip: requestData.tip,
+        } : {
+            func: "tipKey",
+            msg: createResponse.code === 1 ? "tip_save_path_miss" : "tip_siyuan_kernel_unavailable",
             tip: requestData.tip,
         });
         return;
     }
 
-    const docId = createResponse.data;
+    const docId = templateCreated ? createResponse.data?.blockID : createResponse.data;
+    if (!docId) {
+        safeTabsSendMessage(requestData.tabId, {
+            func: "tipKey",
+            msg: "tip_siyuan_kernel_unavailable",
+            tip: requestData.tip,
+        });
+        return;
+    }
 
-    if (requestData.selectedDatabaseID) {
+    if (!templateCreated && requestData.selectedDatabaseID) {
         const dbOk = await addClippedDocToDatabase(apiBase, requestData.token, docId, requestData.selectedDatabaseID);
         if (!dbOk) {
             console.warn("Failed to add clipped doc to database:", docId, requestData.selectedDatabaseID);

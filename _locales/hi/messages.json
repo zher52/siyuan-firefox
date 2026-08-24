@@ -146,6 +146,9 @@
   "database_label": {
     "message": "डेटाबेस में जोड़ें"
   },
+  "database_template_label": {
+    "message": "डेटाबेस आइटम टेम्पलेट"
+  },
   "database_search_placeholder": {
     "message": "डेटाबेस खोजने के लिए एक कीवर्ड दर्ज करें"
   },

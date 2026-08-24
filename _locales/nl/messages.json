@@ -146,6 +146,9 @@
   "database_label": {
     "message": "Toevoegen aan database"
   },
+  "database_template_label": {
+    "message": "Database-itemsjabloon"
+  },
   "database_search_placeholder": {
     "message": "Voer een trefwoord in om de database te zoeken"
   },

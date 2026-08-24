@@ -146,6 +146,9 @@
   "database_label": {
     "message": "เพิ่มไปยังฐานข้อมูล"
   },
+  "database_template_label": {
+    "message": "เทมเพลตรายการฐานข้อมูล"
+  },
   "database_search_placeholder": {
     "message": "ป้อนคำสำคัญเพื่อค้นหาฐานข้อมูล"
   },

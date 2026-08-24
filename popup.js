@@ -19,6 +19,10 @@ function t(key) {
     return escapeHtml(siyuanGetMessage(key));
 }
 
+function getDatabaseDisplayName(database) {
+    return database.hPath ? `${database.avName} - ${database.hPath}` : database.avName;
+}
+
 function switchRowHtml(key, id) {
     return `<div class="popup__row">
         <span class="popup__row-label u-text-body u-selectable">${t(key)}</span>
@@ -136,7 +140,16 @@ function syncSendBlockFromLocal() {
     const savePathTemplate = mode === "template"
         ? document.getElementById("savePathTemplate")?.value.trim() || SIYUAN_DEFAULT_SAVE_PATH_TEMPLATE
         : searchDisplay?.dataset.path;
-    const result = siyuanValidateClipPrereqs({ token, notebook, savePathTemplate });
+    const databaseTemplateID = document.getElementById("databaseTemplate")?.value;
+    const databaseDisplay = document.getElementById("databaseDisplay");
+    const result = siyuanValidateClipPrereqs({
+        token,
+        notebook,
+        savePathTemplate,
+        databaseID: databaseDisplay?.dataset.selectedId,
+        databaseBlockID: databaseDisplay?.dataset.selectedBlockId,
+        databaseTemplateID,
+    });
     if (!result.ok) {
         setSendBlockKey(result.error);
         return false;
@@ -162,6 +175,7 @@ let notebookListGen = 0;
 let savePathSearchGen = 0;
 let savePathPreviewGen = 0;
 let databaseSearchGen = 0;
+let databaseTemplateGen = 0;
 let notebookCache = [];
 
 async function reloadPopup(langCode) {
@@ -177,7 +191,8 @@ async function reloadPopup(langCode) {
     const scroll = document.querySelector(".popup__scroll");
     if (scroll) scroll.scrollTop = scrollTop;
     if (items.token?.trim()) void updateNotebookList({ quiet: true });
-    void updateDatabaseSearch({ quiet: true });
+    await updateDatabaseSearch({ quiet: true });
+    void updateDatabaseTemplates({ quiet: true });
 }
 
 function applyPopupLayout() {
@@ -283,6 +298,7 @@ function renderPopup(items) {
         items.searchParentDoc,
     );
     const toggleSearchPathMenu = async () => {
+        if (document.getElementById("databaseTemplate")?.value) return;
         const isOpen = searchPathMenu.classList.contains("popup__dropdown-panel--open");
         closeAllDropdowns();
         if (!isOpen) {
@@ -348,6 +364,7 @@ function renderPopup(items) {
         }
     };
     savePathModeAction.addEventListener("click", () => {
+        if (document.getElementById("databaseTemplate")?.value) return;
         applySavePathMode(savePathSection.dataset.mode === "template" ? "search" : "template", true);
     });
     applySavePathMode(savePathSection.dataset.mode);
@@ -379,6 +396,8 @@ function renderPopup(items) {
         ? items.selectedDatabaseName || ""
         : siyuanGetMessage("database_none");
     databaseDisplay.dataset.selectedId = items.selectedDatabaseID || "";
+    databaseDisplay.dataset.selectedBlockId = items.selectedDatabaseBlockID || "";
+    databaseDisplay.dataset.selectedViewId = items.selectedDatabaseViewID || "";
     databaseInput.value = items.searchDatabaseKey || "";
     // 数据库下拉菜单事件
     const toggleDatabaseMenu = () => {
@@ -405,12 +424,45 @@ function renderPopup(items) {
         const item = e.target.closest(".popup__search-list-item[data-id]");
         if (!item) return;
         databaseDisplay.textContent = item.textContent;
+        databaseDisplay.dataset.selectedId = item.getAttribute("data-id");
+        databaseDisplay.dataset.selectedBlockId = item.getAttribute("data-block-id") || "";
+        databaseDisplay.dataset.selectedViewId = item.getAttribute("data-view-id") || "";
         chrome.storage.sync.set({
-            selectedDatabaseID: item.getAttribute("data-id"),
+            selectedDatabaseID: databaseDisplay.dataset.selectedId,
             selectedDatabaseName: item.textContent,
+            selectedDatabaseBlockID: databaseDisplay.dataset.selectedBlockId,
+            selectedDatabaseViewID: databaseDisplay.dataset.selectedViewId,
+            selectedDatabaseTemplateID: "",
+            selectedDatabaseTemplateConfigured: false,
         });
         databaseMenu.classList.remove("popup__dropdown-panel--open");
+        const databaseTemplate = document.getElementById("databaseTemplate");
+        databaseTemplate.value = "";
+        databaseTemplate.dataset.selectedId = "";
+        databaseTemplate.dataset.configured = "false";
+        setSavePathControlledByDatabaseTemplate(false);
+        syncSendBlockFromLocal();
+        void updateDatabaseTemplates();
     });
+
+    savePathSection.insertAdjacentHTML(
+        "beforeend",
+        fieldHtml("database_template_label", `<select class="popup__select u-surface" id="databaseTemplate"></select>`),
+    );
+    const databaseTemplate = savePathSection.querySelector("#databaseTemplate");
+    databaseTemplate.dataset.selectedId = items.selectedDatabaseTemplateID || "";
+    databaseTemplate.dataset.configured = String(!!items.selectedDatabaseTemplateConfigured);
+    databaseTemplate.addEventListener("change", () => {
+        databaseTemplate.dataset.selectedId = databaseTemplate.value;
+        databaseTemplate.dataset.configured = "true";
+        chrome.storage.sync.set({
+            selectedDatabaseTemplateID: databaseTemplate.value,
+            selectedDatabaseTemplateConfigured: true,
+        });
+        setSavePathControlledByDatabaseTemplate(!!databaseTemplate.value);
+        syncSendBlockFromLocal();
+    });
+    setSavePathControlledByDatabaseTemplate(!!items.selectedDatabaseTemplateID);
 
     savePathSection.insertAdjacentHTML(
         "beforeend",
@@ -495,6 +547,7 @@ function renderPopup(items) {
             syncSendBlockFromLocal();
             void updateNotebookList({ quiet: true });
             void updateSavePathPreview();
+            void updateDatabaseSearch({ quiet: true }).then(() => updateDatabaseTemplates({ quiet: true }));
         },
     });
 
@@ -510,6 +563,7 @@ function renderPopup(items) {
             syncSendBlockFromLocal();
             void updateNotebookList({ quiet: true });
             void updateSavePathPreview();
+            void updateDatabaseSearch({ quiet: true }).then(() => updateDatabaseTemplates({ quiet: true }));
         },
     });
     tokenToggle.addEventListener("click", () => {
@@ -614,7 +668,8 @@ async function bootstrapPopup() {
             }
         });
         if (items.token?.trim()) void updateNotebookList({ quiet: true });
-        void updateDatabaseSearch({ quiet: true });
+        await updateDatabaseSearch({ quiet: true });
+        void updateDatabaseTemplates({ quiet: true });
     } catch (e) {
         console.error(e);
     } finally {
@@ -781,6 +836,106 @@ const updateSavePathPreview = async () => {
     previewValueElement.textContent = notebookName + " " + normalizePreviewPath(result.data.data);
 };
 
+const setSavePathControlledByDatabaseTemplate = (controlled) => {
+    const savePathSection = document.getElementById("savePathSection");
+    if (!savePathSection) return;
+    savePathSection.querySelector(".popup__section-heading")?.classList.toggle("popup__path-controls--disabled", controlled);
+    savePathSection.querySelectorAll(".popup__save-path-mode").forEach((element) => {
+        element.classList.toggle("popup__path-controls--disabled", controlled);
+    });
+    const modeAction = document.getElementById("savePathModeAction");
+    const searchDisplay = document.getElementById("searchPathDisplay");
+    const searchInput = document.getElementById("searchPathInput");
+    const templateNotebook = document.getElementById("templateNotebook");
+    const savePathTemplate = document.getElementById("savePathTemplate");
+    if (modeAction) modeAction.disabled = controlled;
+    if (searchDisplay) {
+        searchDisplay.setAttribute("aria-disabled", String(controlled));
+        searchDisplay.tabIndex = controlled ? -1 : 0;
+    }
+    if (searchInput) searchInput.disabled = controlled;
+    if (templateNotebook) templateNotebook.disabled = controlled;
+    if (savePathTemplate) savePathTemplate.disabled = controlled;
+    if (controlled) document.getElementById("searchPathMenu")?.classList.remove("popup__dropdown-panel--open");
+};
+
+const updateDatabaseTemplates = async ({ quiet = false } = {}) => {
+    const ipElement = document.getElementById("ip");
+    const tokenElement = document.getElementById("token");
+    const databaseDisplay = document.getElementById("databaseDisplay");
+    const databaseTemplate = document.getElementById("databaseTemplate");
+    if (!ipElement || !tokenElement || !databaseDisplay || !databaseTemplate) return;
+
+    const gen = ++databaseTemplateGen;
+    const avID = databaseDisplay.dataset.selectedId || "";
+    const blockID = databaseDisplay.dataset.selectedBlockId || "";
+    databaseTemplate.disabled = true;
+    if (!avID || !blockID || !tokenElement.value.trim()) {
+        databaseTemplate.innerHTML = `<option value="">${t("database_none")}</option>`;
+        databaseTemplate.value = "";
+        setSavePathControlledByDatabaseTemplate(false);
+        return;
+    }
+
+    const result = await siyuanKernelFetch({
+        ip: ipElement.value,
+        token: tokenElement.value,
+        path: "/api/av/getAttributeView",
+        body: { id: avID },
+    });
+    if (gen !== databaseTemplateGen) return;
+    if (!result.ok || result.data?.code !== 0) {
+        databaseTemplate.innerHTML = `<option value="">${t("database_none")}</option>`;
+        databaseTemplate.value = "";
+        databaseTemplate.dataset.selectedId = "";
+        databaseTemplate.dataset.configured = "true";
+        await chrome.storage.sync.set({
+            selectedDatabaseTemplateID: "",
+            selectedDatabaseTemplateConfigured: true,
+        });
+        setSavePathControlledByDatabaseTemplate(false);
+        if (!result.ok) {
+            setSendBlockKey(result.error);
+        } else if (!quiet) {
+            setSendBlock(result.data?.msg || siyuanGetMessage("tip_siyuan_kernel_unavailable"));
+        }
+        return;
+    }
+    if (!result.data?.data?.av) {
+        databaseTemplate.innerHTML = `<option value="">${t("database_none")}</option>`;
+        databaseTemplate.value = "";
+        databaseTemplate.dataset.selectedId = "";
+        databaseTemplate.dataset.configured = "true";
+        await chrome.storage.sync.set({
+            selectedDatabaseTemplateID: "",
+            selectedDatabaseTemplateConfigured: true,
+        });
+        setSavePathControlledByDatabaseTemplate(false);
+        syncSendBlockFromLocal();
+        return;
+    }
+
+    const attrView = result.data.data.av;
+    const templates = (attrView.newItemTemplates || []).filter((item) => item.targetType === "document");
+    let selectedID = databaseTemplate.dataset.configured === "true"
+        ? databaseTemplate.dataset.selectedId
+        : attrView.defaultTemplateID || "";
+    if (!templates.some((item) => item.id === selectedID)) selectedID = "";
+    databaseTemplate.innerHTML = `<option value="">${t("database_none")}</option>` + templates
+        .map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)}</option>`)
+        .join("");
+    databaseTemplate.value = selectedID;
+    databaseTemplate.disabled = templates.length === 0;
+    databaseTemplate.dataset.selectedId = selectedID;
+    databaseTemplate.dataset.configured = "true";
+    await chrome.storage.sync.set({
+        selectedDatabaseTemplateID: selectedID,
+        selectedDatabaseTemplateConfigured: true,
+    });
+    setSavePathControlledByDatabaseTemplate(!!selectedID);
+    syncSendBlockFromLocal();
+};
+
 const updateDatabaseSearch = async ({ quiet = false } = {}) => {
     const ipElement = document.getElementById("ip");
     const tokenElement = document.getElementById("token");
@@ -823,14 +978,46 @@ const updateDatabaseSearch = async ({ quiet = false } = {}) => {
         optionsHTML = `<li class="popup__search-list-item" data-id="">${escapeHtml(siyuanGetMessage("database_none"))}</li>`;
     }
     let selectedName = "";
+    let selectedBlockResolved = false;
     if (response.data && response.data.results) {
         response.data.results.forEach((db) => {
             if (!db.avName) return;
-            if (databaseDisplay.dataset.selectedId === db.avID) {
-                selectedName = db.avName;
+            const selected = databaseDisplay.dataset.selectedId === db.avID &&
+                (!databaseDisplay.dataset.selectedBlockId || databaseDisplay.dataset.selectedBlockId === db.blockID);
+            if (selected && !selectedBlockResolved) {
+                selectedName = getDatabaseDisplayName(db);
+                selectedBlockResolved = true;
+                if (!databaseDisplay.dataset.selectedBlockId) {
+                    databaseDisplay.dataset.selectedBlockId = db.blockID || "";
+                    databaseDisplay.dataset.selectedViewId = db.viewID || "";
+                    chrome.storage.sync.set({
+                        selectedDatabaseBlockID: databaseDisplay.dataset.selectedBlockId,
+                        selectedDatabaseViewID: databaseDisplay.dataset.selectedViewId,
+                    });
+                }
             }
-            optionsHTML += `<li class="popup__search-list-item" data-id="${db.avID}">${escapeHtml(db.avName)}</li>`;
+            optionsHTML += `<li class="popup__search-list-item" data-id="${db.avID}" data-block-id="${db.blockID || ""}" data-view-id="${db.viewID || ""}">${escapeHtml(getDatabaseDisplayName(db))}</li>`;
         });
+    }
+    if (databaseDisplay.dataset.selectedId && !databaseDisplay.dataset.selectedBlockId && !selectedBlockResolved) {
+        const selectedResult = await siyuanKernelFetch({
+            ip: ipElement.value,
+            token: tokenElement.value,
+            path: "/api/av/searchAttributeView",
+            body: { avID: "", keyword: "" },
+        });
+        if (gen !== databaseSearchGen) return;
+        const selectedDatabase = selectedResult.data?.data?.results?.find((db) =>
+            db.avID === databaseDisplay.dataset.selectedId);
+        if (selectedDatabase) {
+            selectedName = getDatabaseDisplayName(selectedDatabase) || selectedName;
+            databaseDisplay.dataset.selectedBlockId = selectedDatabase.blockID || "";
+            databaseDisplay.dataset.selectedViewId = selectedDatabase.viewID || "";
+            chrome.storage.sync.set({
+                selectedDatabaseBlockID: databaseDisplay.dataset.selectedBlockId,
+                selectedDatabaseViewID: databaseDisplay.dataset.selectedViewId,
+            });
+        }
     }
     databaseOptions.innerHTML =
         optionsHTML || `<li class="popup__search-list-item popup__search-list-item--hint">${t("save_path_none")}</li>`;

@@ -146,6 +146,9 @@
   "database_label": {
     "message": "Agregar a la base de datos"
   },
+  "database_template_label": {
+    "message": "Plantilla de elemento de base de datos"
+  },
   "database_search_placeholder": {
     "message": "Ingrese una palabra clave para buscar en la base de datos"
   },
